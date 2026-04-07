@@ -11,8 +11,8 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = 'ccih-secret-key-2024'
 
-TURSO_URL = os.getenv("TURSO_DATABASE_URL", "file:ccih.db")
-TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
+TURSO_URL = os.getenv("libsql://cchi-vitorrastrep.aws-us-east-2.turso.io", "file:ccih.db")
+TURSO_TOKEN = os.getenv("eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA", "")
 
 PROCEDIMENTOS_LISTA = [
     "cateter venoso central punção", "cateter venoso central dessecação",
