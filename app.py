@@ -353,7 +353,7 @@ def delete_usuario(uid):
 
 
 # ---------------------------------------------------------------------------
-# ROUTES — PACIENTES
+# ROUTES — PACIENTES (COM CORREÇÃO PARA TODOS OS PERFIS)
 # ---------------------------------------------------------------------------
 @app.route('/api/pacientes', methods=['GET'])
 @login_required
@@ -367,23 +367,30 @@ def get_pacientes():
         FROM pacientes p
         LEFT JOIN setores s ON s.id = p.setor_id_atual
     """
-    if nivel == 'estagiario' and setor_id:
-        rows = conn.execute(
-            base_query + " WHERE p.setor_id_atual=? AND p.status='internado' ORDER BY p.nome",
-            (setor_id,)
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            base_query + " WHERE p.status='internado' ORDER BY p.setor_nome, p.nome"
-        ).fetchall()
+    try:
+        if nivel == 'estagiario' and setor_id:
+            rows = conn.execute(
+                base_query + " WHERE p.setor_id_atual=? AND p.status='internado' ORDER BY p.nome",
+                (setor_id,)
+            ).fetchall()
+        else:
+            # Esta linha abrange admin e espectador, ordenando agora corretamente pelo s.nome
+            rows = conn.execute(
+                base_query + " WHERE p.status='internado' ORDER BY s.nome, p.nome"
+            ).fetchall()
 
-    for p in rows:
-        p['procedimentos'] = conn.execute(
-            "SELECT * FROM procedimentos WHERE paciente_id=? AND status='ativo'", (p['id'],)
-        ).fetchall()
-        p['infeccoes'] = conn.execute(
-            "SELECT * FROM infeccoes_notificadas WHERE paciente_id=?", (p['id'],)
-        ).fetchall()
+        for p in rows:
+            p['procedimentos'] = conn.execute(
+                "SELECT * FROM procedimentos WHERE paciente_id=? AND status='ativo'", (p['id'],)
+            ).fetchall()
+            p['infeccoes'] = conn.execute(
+                "SELECT * FROM infeccoes_notificadas WHERE paciente_id=?", (p['id'],)
+            ).fetchall()
+
+    except Exception as e:
+        print(f"Erro SQL ao carregar pacientes: {e}")
+        conn.close()
+        return jsonify({'error': str(e)}), 500
 
     conn.close()
     return jsonify(rows)
