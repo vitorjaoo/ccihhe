@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>CCIH · Sistema de Rastreio de Infecção Hospitalar</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['DM Sans', 'sans-serif'], mono: ['DM Mono', 'monospace'] },
+        colors: {
+          teal:  { 50:'#f0fdfa',100:'#ccfbf1',200:'#99f6e4',300:'#5eead4',400:'#2dd4bf',500:'#14b8a6',600:'#0d9488',700:'#0f766e',800:'#115e59',900:'#134e4a' },
+          slate: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a' }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  :root {
+    --c-primary: #0d9488;
+    --c-primary-light: #14b8a6;
+    --c-accent: #0ea5e9;
+    --c-danger: #ef4444;
+    --c-warning: #f59e0b;
+    --c-bg: #f0fdfa;
+    --c-card: #ffffff;
+    --c-border: #e2e8f0;
+    --shadow-card: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(13,148,136,.07);
+    --shadow-hover: 0 4px 24px rgba(13,148,136,.15);
+  }
+  * { box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--c-bg); color: #1e293b; -webkit-tap-highlight-color: transparent; }
+
+  /* ── TOGGLE SWITCH ── */
+  .toggle-wrap { display: flex; align-items: center; gap: .75rem; }
+  .toggle { position: relative; width: 52px; height: 28px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0; background: #cbd5e1; border-radius: 28px;
+    cursor: pointer; transition: .25s ease;
+  }
+  .toggle-slider::before {
+    content:''; position: absolute; width: 22px; height: 22px; left: 3px; top: 3px;
+    background: white; border-radius: 50%; transition: .25s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  }
+  .toggle input:checked + .toggle-slider { background: var(--c-primary); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(24px); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--c-card); border-radius: 16px;
+    box-shadow: var(--shadow-card); border: 1px solid #e8f5f3;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .card:hover { box-shadow: var(--shadow-hover); }
+
+  /* ── TABS ── */
+  .tab-btn { transition: all .2s; position: relative; }
+  .tab-btn.active { color: var(--c-primary); }
+  .tab-btn.active::after {
+    content:''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 3px; background: var(--c-primary); border-radius: 3px 3px 0 0;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── INPUTS ── */
+  .inp {
+    width: 100%; border: 1.5px solid #cbd5e1; border-radius: 12px;
+    padding: .75rem 1rem; font-size: 1rem; font-family: 'DM Sans', sans-serif;
+    background: #f8fafc; transition: border-color .2s, box-shadow .2s;
+    -webkit-appearance: none;
+  }
+  .inp:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(13,148,136,.12); background: white; }
+  .inp::placeholder { color: #94a3b8; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    padding: .75rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: .9375rem;
+    cursor: pointer; transition: all .18s; border: none; font-family: 'DM Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--c-primary); color: white; }
+  .btn-primary:hover { background: #0f766e; box-shadow: 0 4px 16px rgba(13,148,136,.35); }
+  .btn-ghost { background: transparent; color: var(--c-primary); border: 1.5px solid var(--c-primary); }
+  .btn-ghost:hover { background: #f0fdfa; }
+  .btn-danger { background: #fef2f2; color: #ef4444; border: 1.5px solid #fecaca; }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-sm { padding: .5rem 1rem; font-size: .875rem; border-radius: 8px; }
+
+  /* ── BADGE ── */
+  .badge { display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .65rem; border-radius: 99px; font-size: .78rem; font-weight: 600; }
+  .badge-red { background: #fef2f2; color: #dc2626; }
+  .badge-green { background: #f0fdf4; color: #16a34a; }
+  .badge-yellow { background: #fffbeb; color: #d97706; }
+  .badge-blue { background: #eff6ff; color: #2563eb; }
+
+  /* ── PULSE ANIMATION ── */
+  @keyframes pulse-ring { 0%{transform:scale(.85);opacity:.8} 70%{transform:scale(1);opacity:0} 100%{transform:scale(.85);opacity:0} }
+  .pulse-dot { position: relative; display: inline-block; }
+  .pulse-dot::before {
+    content:''; position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid #ef4444; animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  /* ── PATIENT CARD ── */
+  .pac-card { cursor: pointer; }
+  .pac-card:active { transform: scale(.98); }
+
+  /* ── NOTIFICATION DOT ── */
+  .notif-dot {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; background: var(--c-danger); color: white;
+    border-radius: 50%; font-size: .7rem; font-weight: 700;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 50; display: flex; align-items: flex-end; justify-content: center; backdrop-filter: blur(2px); }
+  .modal-box { background: white; border-radius: 24px 24px 0 0; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 1.5rem; }
+  @media(min-width:640px) { .modal-overlay { align-items: center; } .modal-box { border-radius: 20px; max-height: 85vh; } }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+  /* ── STAT CARD ── */
+  .stat-card { background: white; border-radius: 16px; padding: 1.25rem; box-shadow: var(--shadow-card); border: 1px solid #e8f5f3; }
+
+  /* ── LOADER ── */
+  .spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: var(--c-primary); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── FADE IN ── */
+  .fade-in { animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── PROC ROW ── */
+  .proc-row { border-left: 3px solid transparent; padding-left: .75rem; transition: border-color .2s; }
+  .proc-row.active-proc { border-left-color: var(--c-primary); }
+
+  /* ── DIAS COUNTER ── */
+  .dias-counter { font-family: 'DM Mono', monospace; font-size: 1.5rem; font-weight: 500; }
+  .dias-danger { color: #ef4444; }
+  .dias-warning { color: #f59e0b; }
+  .dias-ok { color: var(--c-primary); }
+
+  /* ── TOP NAV ── */
+  .topnav { background: white; border-bottom: 1px solid #e8f5f3; position: sticky; top: 0; z-index: 40; box-shadow: 0 1px 8px rgba(13,148,136,.06); }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ════════════════════════════════════════════════════════
+     LOGIN PAGE
+═══════════════════════════════════════════════════════════ -->
+<div id="page-login" class="{% if page != 'login' %}hidden{% endif %} min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(135deg, #0f766e 0%, #134e4a 50%, #0c4a6e 100%);">
+  <div class="w-full max-w-sm">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4" style="background: rgba(255,255,255,.15); backdrop-filter: blur(8px);">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+          <rect x="19" y="4" width="6" height="36" rx="3" fill="white"/>
+          <rect x="4" y="19" width="36" height="6" rx="3" fill="white"/>
+          <circle cx="22" cy="22" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+      <h1 class="text-3xl font-bold text-white tracking-tight">CCIH</h1>
+      <p class="text-teal-200 mt-1 text-sm font-medium">Sistema de Controle de Infecção Hospitalar</p>
+    </div>
+
+    <!-- Card -->
+    <div class="card p-6 fade-in">
+      <h2 class="text-xl font-semibold mb-5 text-slate-800">Acesse sua conta</h2>
+      <div id="login-error" class="hidden mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100"></div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">Nome de usuário</label>
+          <input id="login-nome" type="text" class="inp" placeholder="Seu nome completo" autocomplete="username"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1.5">Senha</label>
+          <input id="login-senha" type="password" class="inp" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+        <button onclick="doLogin()" class="btn btn-primary w-full mt-2" style="min-height:52px;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+          Entrar
+        </button>
+      </div>
+      <p class="text-xs text-slate-400 mt-4 text-center">Demo: Administrador / admin123 &nbsp;·&nbsp; Ana Lima / estagio123</p>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     APP SHELL
+═══════════════════════════════════════════════════════════ -->
+<div id="page-app" class="{% if page != 'app' %}hidden{% endif %} min-h-screen flex flex-col">
+
+  <!-- Top Nav -->
+  <nav class="topnav px-4 py-3">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center justify-center w-9 h-9 rounded-xl" style="background: var(--c-primary);">
+          <svg width="20" height="20" viewBox="0 0 44 44" fill="none">
+            <rect x="19" y="4" width="6" height="36" rx="3" fill="white"/>
+            <rect x="4" y="19" width="36" height="6" rx="3" fill="white"/>
+          </svg>
+        </div>
+        <div>
+          <span class="font-bold text-slate-800 leading-none block" style="font-size:.95rem;">CCIH</span>
+          <span id="nav-setor" class="text-xs text-teal-600 font-medium"></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div id="nav-notif" class="hidden relative">
+          <button onclick="showTab('transferencias')" class="relative p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-100 transition-colors">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="notif-count" class="notif-dot absolute -top-1 -right-1 text-xs">0</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background: var(--c-primary);" id="nav-avatar">A</div>
+          <span class="text-sm font-medium text-slate-700 hidden sm:block" id="nav-nome"></span>
+        </div>
+        <button onclick="doLogout()" class="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-5">
+
+    <!-- ── ADMIN VIEW ── -->
+    <div id="view-admin" class="hidden space-y-6">
+      <!-- Dashboard Stats -->
+      <div>
+        <h2 class="text-xl font-bold text-slate-800 mb-4">Visão Geral do Hospital</h2>
+        <div class="grid grid-cols-3 gap-3 mb-6">
+          <div class="stat-card text-center">
+            <div class="text-3xl font-bold" style="color:var(--c-primary);" id="dash-pacientes">—</div>
+            <div class="text-xs text-slate-500 mt-1 font-medium">Pacientes Ativos</div>
+          </div>
+          <div class="stat-card text-center">
+            <div class="text-3xl font-bold text-amber-500" id="dash-proc">—</div>
+            <div class="text-xs text-slate-500 mt-1 font-medium">Procedimentos</div>
+          </div>
+          <div class="stat-card text-center">
+            <div class="text-3xl font-bold text-red-500" id="dash-transf">—</div>
+            <div class="text-xs text-slate-500 mt-1 font-medium">Transferências</div>
+          </div>
+        </div>
+        <!-- Setores -->
+        <div class="card p-4 mb-4">
+          <h3 class="font-semibold text-slate-700 mb-3">Ocupação por Setor</h3>
+          <div id="dash-setores" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Gestão de Setores -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-slate-800">Setores / Alas</h3>
+          <button onclick="openModal('modal-setor')" class="btn btn-primary btn-sm">+ Novo Setor</button>
+        </div>
+        <div id="lista-setores" class="space-y-2"></div>
+      </div>
+
+      <!-- Gestão de Usuários -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-slate-800">Usuários</h3>
+          <button onclick="openModal('modal-usuario')" class="btn btn-primary btn-sm">+ Novo Usuário</button>
+        </div>
+        <div id="lista-usuarios" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- ── ESTAGIÁRIO VIEW ── -->
+    <div id="view-estagiario" class="hidden">
+      <!-- TABS -->
+      <div class="border-b border-slate-200 mb-5 -mx-4 px-4 overflow-x-auto">
+        <div class="flex gap-1 min-w-max">
+          <button class="tab-btn active py-3 px-4 text-sm font-semibold text-slate-500" data-tab="pacientes" onclick="showTab('pacientes',this)">
+            Pacientes do Setor
+          </button>
+          <button class="tab-btn py-3 px-4 text-sm font-semibold text-slate-500" data-tab="cadastro" onclick="showTab('cadastro',this)">
+            Cadastrar
+          </button>
+          <button class="tab-btn py-3 px-4 text-sm font-semibold text-slate-500" data-tab="gestao" onclick="showTab('gestao',this)">
+            Gestão
+          </button>
+          <button class="tab-btn py-3 px-4 text-sm font-semibold text-slate-500 relative" data-tab="transferencias" onclick="showTab('transferencias',this)">
+            Transferências
+            <span id="tab-notif-badge" class="hidden ml-1.5 notif-dot" style="width:16px;height:16px;font-size:.65rem;vertical-align:middle;display:none;"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB: PACIENTES -->
+      <div id="tab-pacientes" class="tab-content active">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-slate-800">Pacientes Internados</h2>
+          <button onclick="loadPacientes()" class="p-2 rounded-xl text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition-colors">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          </button>
+        </div>
+        <div id="loading-pacientes" class="flex justify-center py-10"><div class="spinner"></div></div>
+        <div id="lista-pacientes" class="space-y-3"></div>
+        <div id="empty-pacientes" class="hidden text-center py-12 text-slate-400">
+          <svg class="mx-auto mb-3 text-slate-300" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>
+          <p class="font-medium">Nenhum paciente neste setor</p>
+        </div>
+      </div>
+
+      <!-- TAB: CADASTRO -->
+      <div id="tab-cadastro" class="tab-content">
+        <div class="card p-5">
+          <h2 class="text-lg font-bold text-slate-800 mb-5">Novo Paciente</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-600 mb-1.5">Nome completo *</label>
+              <input id="cad-nome" type="text" class="inp" placeholder="Nome do paciente"/>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1.5">Idade</label>
+                <input id="cad-idade" type="number" class="inp" placeholder="Anos" min="0" max="130"/>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1.5">Sexo</label>
+                <select id="cad-sexo" class="inp">
+                  <option value="">Selecione</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Feminino</option>
+                  <option value="O">Outro</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1.5">Leito</label>
+                <input id="cad-leito" type="text" class="inp" placeholder="Ex: 01-A"/>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1.5">Prontuário</label>
+                <input id="cad-prontuario" type="text" class="inp" placeholder="Nº prontuário"/>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600 mb-1.5">Telefone / Responsável</label>
+              <input id="cad-fone" type="tel" class="inp" placeholder="(82) 99999-0000"/>
+            </div>
+            <div id="cad-error" class="hidden p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100"></div>
+            <button onclick="cadastrarPaciente()" class="btn btn-primary w-full" style="min-height:52px;">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              Cadastrar Paciente
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: GESTÃO -->
+      <div id="tab-gestao" class="tab-content">
+        <!-- Seleção de paciente -->
+        <div id="gestao-select" class="">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-slate-600 mb-1.5">Selecionar Paciente</label>
+            <select id="gestao-pac-select" class="inp" onchange="loadGestao(this.value)">
+              <option value="">— escolha um paciente —</option>
+            </select>
+          </div>
+          <div id="gestao-content" class="hidden space-y-5 fade-in">
+            <!-- Header -->
+            <div class="card p-4 flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0" style="background: linear-gradient(135deg, var(--c-primary), #0ea5e9);" id="g-avatar">A</div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-slate-800 text-lg leading-tight" id="g-nome">—</h3>
+                <div class="flex flex-wrap gap-2 mt-1">
+                  <span class="badge badge-blue" id="g-leito">Leito —</span>
+                  <span class="badge badge-green" id="g-idade">— anos</span>
+                  <span class="text-xs text-slate-400 self-center" id="g-pront"></span>
+                </div>
+              </div>
+              <button onclick="darAlta()" class="btn btn-danger btn-sm flex-shrink-0">Alta</button>
+            </div>
+
+            <!-- Registro Diário -->
+            <div class="card p-5">
+              <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                Registro Diário
+              </h4>
+              <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label class="block text-sm font-medium text-slate-600 mb-1.5">Data</label>
+                  <input id="reg-data" type="date" class="inp"/>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-600 mb-1.5">Temperatura (°C)</label>
+                  <input id="reg-temp" type="number" class="inp" placeholder="36.5" step="0.1" min="33" max="43"/>
+                </div>
+              </div>
+              <button onclick="salvarRegistro()" class="btn btn-primary btn-sm">Salvar Registro</button>
+              <!-- Histórico -->
+              <div id="hist-registros" class="mt-4 space-y-2"></div>
+            </div>
+
+            <!-- Procedimentos Invasivos -->
+            <div class="card p-5">
+              <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3M6.343 6.343l-.707-.707M12 21v-1"/><circle cx="12" cy="12" r="4"/></svg>
+                Procedimentos Invasivos
+              </h4>
+              <div id="lista-proc" class="space-y-3"></div>
+            </div>
+
+            <!-- Histórico de Registros -->
+            <div class="card p-5" id="card-historico">
+              <h4 class="font-bold text-slate-800 mb-3">Histórico de Temperaturas</h4>
+              <div id="hist-temp-list" class="space-y-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: TRANSFERÊNCIAS -->
+      <div id="tab-transferencias" class="tab-content">
+        <!-- Pendentes para ACEITAR -->
+        <div class="mb-6">
+          <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-ping inline-block"></span>
+            Transferências Recebidas
+          </h3>
+          <div id="lista-pendentes" class="space-y-3">
+            <p class="text-sm text-slate-400">Nenhuma transferência pendente.</p>
+          </div>
+        </div>
+        <!-- Enviar transferência -->
+        <div class="card p-5">
+          <h3 class="font-bold text-slate-800 mb-4">Transferir Paciente</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-600 mb-1.5">Paciente</label>
+              <select id="transf-pac" class="inp">
+                <option value="">— selecione —</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600 mb-1.5">Ala de Destino</label>
+              <select id="transf-destino" class="inp">
+                <option value="">— selecione o destino —</option>
+              </select>
+            </div>
+            <button onclick="criarTransferencia()" class="btn btn-primary w-full" style="min-height:52px;">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              Solicitar Transferência
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /view-estagiario -->
+  </main>
+</div><!-- /page-app -->
+
+<!-- ════════════════════════════════════════════════════════
+     MODAIS
+═══════════════════════════════════════════════════════════ -->
+
+<!-- Modal Novo Setor -->
+<div id="modal-setor" class="modal-overlay hidden" onclick="if(event.target===this)closeModal('modal-setor')">
+  <div class="modal-box">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-lg font-bold text-slate-800">Novo Setor</h3>
+      <button onclick="closeModal('modal-setor')" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100">✕</button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1.5">Nome do Setor</label>
+        <input id="m-setor-nome" type="text" class="inp" placeholder="Ex: UTI Adulto"/>
+      </div>
+      <button onclick="criarSetor()" class="btn btn-primary w-full">Criar Setor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Usuário -->
+<div id="modal-usuario" class="modal-overlay hidden" onclick="if(event.target===this)closeModal('modal-usuario')">
+  <div class="modal-box">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-lg font-bold text-slate-800">Novo Usuário</h3>
+      <button onclick="closeModal('modal-usuario')" class="p-2 rounded-xl text-slate-400 hover:bg-slate-100">✕</button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1.5">Nome completo</label>
+        <input id="m-usr-nome" type="text" class="inp" placeholder="Nome do usuário"/>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1.5">Nível de Acesso</label>
+        <select id="m-usr-nivel" class="inp" onchange="toggleSetorField()">
+          <option value="estagiario">Estagiário</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+      <div id="m-setor-field">
+        <label class="block text-sm font-medium text-slate-600 mb-1.5">Setor</label>
+        <select id="m-usr-setor" class="inp"></select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1.5">Senha</label>
+        <input id="m-usr-senha" type="password" class="inp" placeholder="Mínimo 6 caracteres"/>
+      </div>
+      <button onclick="criarUsuario()" class="btn btn-primary w-full">Criar Usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl text-white text-sm font-semibold shadow-xl transition-all" style="min-width:220px;text-align:center;"></div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
