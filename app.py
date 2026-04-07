@@ -503,7 +503,7 @@ def relatorio_impresso():
         </div>
         <div class="header">
             <div style="display: flex; align-items: center; gap: 15px;">
-                <img src="/static/logoufal.png" alt="Logo Faculdade" style="height: 60px; object-fit: contain;">
+                <img src="/static/logoufal.png" alt="Logo UFAL" style="height: 60px; object-fit: contain;">
                 <div>
                     <h1 style="margin:0;">Hospital / Clínica</h1>
                     <p style="margin:5px 0 0 0;">Relatório Geral de Controle de Infecção Hospitalar (CCIH)</p>
