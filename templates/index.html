@@ -1,157 +1,238 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CCIH · Controle Hospitalar</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>CCIH · Dashboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <script>
   window.USER = { nivel: "{{ nivel }}", nome: "{{ user }}", setorId: "{{ setor_id }}" };
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['DM Sans', 'sans-serif'] },
+        colors: { primary: '#0d9488', primaryHover: '#0f766e', bgLight: '#f0fdfa' }
+      }
+    }
+  }
 </script>
 <style>
-  body { font-family: 'DM Sans', sans-serif; background: #f0fdfa; color: #1e293b; }
-  .card { background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(13,148,136,0.08); padding: 1.5rem; }
-  .inp { width: 100%; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 0.75rem 1rem; outline: none; background: #f8fafc; transition: 0.2s; }
-  .inp:focus { border-color: #0d9488; }
-  .btn { padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: bold; cursor: pointer; text-align: center; }
-  .btn-primary { background: #0d9488; color: white; }
-  .btn-danger { background: #ef4444; color: white; }
-  .badge { padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.75rem; font-weight: bold; }
-  .toggle { position: relative; width: 44px; height: 24px; }
+  body { font-family: 'DM Sans', sans-serif; background-color: #f8fafc; color: #1e293b; -webkit-tap-highlight-color: transparent; }
+  
+  /* Cards & Inputs premium */
+  .card { background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(13,148,136,0.05); border: 1px solid #f1f5f9; transition: transform 0.2s, box-shadow 0.2s; }
+  .inp { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 0.875rem 1rem; font-size: 0.95rem; background: #f8fafc; transition: all 0.2s; outline: none; }
+  .inp:focus { border-color: #0d9488; background: white; box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+  
+  /* Buttons */
+  .btn { display: inline-flex; justify-content: center; align-items: center; padding: 0.875rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; border: none; gap: 0.5rem; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--c-primary, #0d9488); color: white; }
+  .btn-primary:hover { background: #0f766e; box-shadow: 0 4px 12px rgba(13,148,136,0.25); }
+  .btn-danger { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+  
+  /* Toggles animados */
+  .toggle { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
   .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 24px; transition: .2s; }
-  .toggle-slider:before { content:""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s; }
+  .toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 24px; cursor: pointer; transition: .3s; }
+  .toggle-slider::before { content:''; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
   .toggle input:checked + .toggle-slider { background: #0d9488; }
-  .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
-  .modal.active { display: flex; }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(22px); }
+  
+  /* Modais com Glassmorphism */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 50; padding: 1rem; opacity: 0; transition: opacity 0.2s; }
+  .modal-overlay.active { display: flex; opacity: 1; }
+  .modal-box { width: 100%; max-width: 420px; transform: translateY(20px); transition: transform 0.3s; }
+  .modal-overlay.active .modal-box { transform: translateY(0); }
+  
+  /* Badges */
+  .badge { padding: 4px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; }
+  .bg-gradient-login { background: linear-gradient(135deg, #0f766e 0%, #134e4a 50%, #082f49 100%); }
 </style>
 </head>
 <body>
 
-<div id="view-login" class="{% if page != 'login' %}hidden{% endif %} min-h-screen flex items-center justify-center p-4 bg-teal-700">
-  <div class="card w-full max-w-sm text-center">
-    <h1 class="text-2xl font-bold text-teal-800 mb-6">Acesso CCIH</h1>
-    <input id="log-email" type="email" class="inp mb-3" placeholder="Email"/>
-    <input id="log-senha" type="password" class="inp mb-5" placeholder="Senha"/>
-    <button onclick="fazerLogin()" class="btn btn-primary w-full">Entrar no Sistema</button>
+<div id="view-login" class="{% if page != 'login' %}hidden{% endif %} min-h-screen flex items-center justify-center p-4 bg-gradient-login">
+  <div class="card p-8 w-full max-w-sm text-center" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
+    <div class="w-16 h-16 mx-auto bg-primary text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+      <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    <h1 class="text-2xl font-bold text-slate-800 tracking-tight">CCIH Digital</h1>
+    <p class="text-slate-500 text-sm mb-8">Controle de Risco de Infecção</p>
+    
+    <div class="space-y-4">
+      <input id="log-email" type="email" class="inp" placeholder="Seu email"/>
+      <input id="log-senha" type="password" class="inp" placeholder="Sua senha"/>
+      <button onclick="fazerLogin()" class="btn btn-primary w-full mt-2">Acessar Sistema</button>
+    </div>
   </div>
 </div>
 
-<div id="view-app" class="{% if page != 'app' %}hidden{% endif %} min-h-screen pb-20">
-  <nav class="bg-white p-4 shadow-sm sticky top-0 z-40 flex justify-between items-center">
-    <h2 class="font-bold text-teal-700 text-lg">CCIH Hospitalar</h2>
-    <div class="flex items-center gap-4 text-sm font-medium">
-      <span id="nav-user"></span>
-      <button onclick="sair()" class="text-red-500 font-bold">Sair</button>
+<div id="view-app" class="{% if page != 'app' %}hidden{% endif %} min-h-screen flex flex-col">
+  
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-md">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <h2 class="font-bold text-slate-800 leading-tight">CCIH</h2>
+          <p class="text-xs text-primary font-semibold" id="nav-user">Carregando...</p>
+        </div>
+      </div>
+      <button onclick="sair()" class="text-slate-400 hover:text-red-500 p-2 transition"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
     </div>
   </nav>
 
-  <main class="max-w-4xl mx-auto p-4 space-y-6 mt-4">
-    <div class="flex gap-2 overflow-x-auto border-b pb-2">
-      <button onclick="mudarAba('dashboard')" class="aba-btn font-bold text-slate-400 pb-2 px-2" id="btn-dashboard">Visão Global / Relatórios</button>
-      <button onclick="mudarAba('pacientes')" class="aba-btn font-bold text-slate-400 pb-2 px-2" id="btn-pacientes">Meus Pacientes</button>
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
+    
+    <div class="flex gap-2 overflow-x-auto border-b border-slate-200 pb-2 mb-6">
+      <button onclick="mudarAba('dashboard')" class="aba-btn font-bold text-slate-400 pb-2 px-3 whitespace-nowrap transition" id="btn-dashboard">📊 Dashboard Gerencial</button>
+      <button onclick="mudarAba('pacientes')" class="aba-btn font-bold text-slate-400 pb-2 px-3 whitespace-nowrap transition" id="btn-pacientes">🛏️ Pacientes Internados</button>
     </div>
 
-    <div id="aba-dashboard" class="aba-conteudo hidden space-y-6">
-      <h3 class="font-bold text-xl text-slate-800">Taxas e Índices (Mês Atual)</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="cards-relatorio">
-        </div>
+    <div id="aba-dashboard" class="aba-conteudo hidden space-y-6 fade-in">
       
-      <div class="write-only mt-6 card">
-        <h3 class="font-bold mb-4">Gestão do Sistema</h3>
-        <div class="flex flex-wrap gap-4">
-          <button onclick="document.getElementById('mod-user').classList.add('active')" class="btn btn-primary text-sm">Novo Usuário</button>
-          <button onclick="document.getElementById('mod-setor').classList.add('active')" class="btn btn-primary text-sm">Novo Setor</button>
+      <div>
+        <h3 class="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2">Métricas e Índices (Mês Atual)</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="cards-relatorio">
+          </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6 write-only">
+        <div class="card p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-slate-800">Equipe / Acessos</h3>
+            <button onclick="abrirModal('mod-user')" class="text-primary font-bold text-sm bg-bgLight px-3 py-1 rounded-lg hover:bg-teal-100">+ Novo</button>
+          </div>
+          <div id="lista-usuarios" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-slate-800">Alas Hospitalares</h3>
+            <button onclick="abrirModal('mod-setor')" class="text-primary font-bold text-sm bg-bgLight px-3 py-1 rounded-lg hover:bg-teal-100">+ Novo</button>
+          </div>
+          <div id="lista-setores" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>
         </div>
       </div>
     </div>
 
-    <div id="aba-pacientes" class="aba-conteudo hidden space-y-4">
-      <div class="flex justify-between items-center">
-        <h3 class="font-bold text-xl text-slate-800">Pacientes Internados</h3>
-        <button onclick="document.getElementById('mod-paciente').classList.add('active')" class="btn btn-primary text-sm write-only">+ Cadastrar</button>
+    <div id="aba-pacientes" class="aba-conteudo hidden space-y-4 fade-in">
+      <div class="flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+        <h3 class="font-bold text-slate-800 ml-2">Monitoramento</h3>
+        <button onclick="abrirModal('mod-paciente')" class="btn btn-primary text-sm write-only py-2 px-4 shadow-md">+ Novo Paciente</button>
       </div>
       <div id="lista-pacientes" class="space-y-3"></div>
     </div>
 
-    <div id="tela-paciente" class="hidden space-y-4">
-      <button onclick="mudarAba('pacientes')" class="text-teal-600 font-bold text-sm mb-2">← Voltar para lista</button>
-      <div class="card bg-teal-50 border-teal-100 flex justify-between items-center">
+    <div id="tela-paciente" class="hidden space-y-5 fade-in">
+      <button onclick="mudarAba('pacientes')" class="flex items-center gap-2 text-primary font-bold text-sm hover:text-primaryHover bg-white px-4 py-2 rounded-xl w-max shadow-sm">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Voltar
+      </button>
+
+      <div class="card p-6 bg-gradient-to-r from-teal-50 to-white border-l-4 border-l-primary flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-teal-900" id="det-nome"></h2>
-          <p class="text-teal-700 text-sm mt-1" id="det-info"></p>
+          <h2 class="text-2xl font-bold text-slate-800" id="det-nome"></h2>
+          <div class="flex flex-wrap gap-2 mt-2" id="det-info"></div>
         </div>
-        <button onclick="document.getElementById('mod-alta').classList.add('active')" class="btn btn-danger text-sm write-only">Dar Alta</button>
+        <button onclick="abrirModal('mod-alta')" class="btn btn-danger text-sm write-only shadow-sm whitespace-nowrap">Finalizar Internação</button>
       </div>
 
-      <div class="card space-y-4 write-only">
-        <h3 class="font-bold">Notificar Infecção (CCIH)</h3>
-        <div class="flex gap-2">
-          <select id="inf-tipo" class="inp">
+      <div class="card p-6 write-only border border-red-100 bg-red-50/30">
+        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Notificar Infecção (CCIH)
+        </h3>
+        <div class="flex flex-col md:flex-row gap-3">
+          <select id="inf-tipo" class="inp flex-1 border-red-200 focus:border-red-400">
+            <option value="">Selecione o tipo diagnosticado...</option>
             <option value="Trato Urinário">Trato Urinário</option>
-            <option value="Sepse">Sangue/Sepse</option>
+            <option value="Sepse">Sangue / Sepse</option>
             <option value="Pneumonia">Pneumonia</option>
             <option value="Ferida Operatória">Cirúrgica / Ferida Operatória</option>
             <option value="Outra">Outra</option>
           </select>
-          <button onclick="salvarInfeccao()" class="btn btn-primary">Notificar</button>
+          <button onclick="salvarInfeccao()" class="btn bg-red-500 hover:bg-red-600 text-white shadow-md">Registrar Caso</button>
         </div>
       </div>
 
-      <div class="card">
-        <h3 class="font-bold mb-4">Procedimentos Invasivos</h3>
+      <div class="card p-6">
+        <h3 class="font-bold text-slate-800 mb-4">Controle de Procedimentos Invasivos</h3>
         <div id="lista-procedimentos" class="space-y-3"></div>
       </div>
     </div>
+
   </main>
 </div>
 
-<div id="mod-alta" class="modal">
-  <div class="card w-full max-w-sm">
-    <h3 class="font-bold mb-4">Finalizar Internação</h3>
-    <select id="alta-motivo" class="inp mb-4">
+<div id="mod-alta" class="modal-overlay">
+  <div class="card modal-box p-6">
+    <h3 class="text-xl font-bold text-slate-800 mb-1">Finalizar Internação</h3>
+    <p class="text-sm text-slate-500 mb-5">Por favor, informe o motivo da saída deste paciente.</p>
+    <select id="alta-motivo" class="inp mb-6">
       <option value="Alta Médica">Alta Médica</option>
       <option value="Óbito">Óbito</option>
-      <option value="Transferência">Transferência para outro hospital</option>
+      <option value="Transferência">Transferência Externa</option>
     </select>
-    <div class="flex gap-2"><button onclick="document.getElementById('mod-alta').classList.remove('active')" class="btn bg-slate-200 flex-1 text-slate-700">Cancelar</button><button onclick="salvarAlta()" class="btn btn-danger flex-1">Confirmar Saída</button></div>
+    <div class="flex gap-3">
+      <button onclick="fecharModal('mod-alta')" class="btn bg-slate-100 text-slate-600 flex-1 hover:bg-slate-200">Cancelar</button>
+      <button onclick="salvarAlta()" class="btn btn-danger flex-1">Confirmar</button>
+    </div>
   </div>
 </div>
 
-<div id="mod-paciente" class="modal">
-  <div class="card w-full max-w-sm space-y-3">
-    <h3 class="font-bold mb-2">Novo Paciente</h3>
-    <input id="cad-p-nome" class="inp" placeholder="Nome Completo"/>
-    <div class="grid grid-cols-2 gap-2"><input id="cad-p-idade" type="number" class="inp" placeholder="Idade"/><input id="cad-p-leito" class="inp" placeholder="Leito"/></div>
+<div id="mod-paciente" class="modal-overlay">
+  <div class="card modal-box p-6 space-y-4">
+    <h3 class="text-xl font-bold text-slate-800">Novo Paciente</h3>
+    <input id="cad-p-nome" class="inp" placeholder="Nome Completo do Paciente"/>
+    <div class="grid grid-cols-2 gap-3">
+      <input id="cad-p-idade" type="number" class="inp" placeholder="Idade (anos)"/>
+      <input id="cad-p-leito" class="inp" placeholder="Nº Leito"/>
+    </div>
     <select id="cad-p-setor" class="inp hidden"></select>
-    <div class="flex gap-2 mt-4"><button onclick="document.getElementById('mod-paciente').classList.remove('active')" class="btn bg-slate-200 flex-1 text-slate-700">Cancelar</button><button onclick="salvarPaciente()" class="btn btn-primary flex-1">Salvar</button></div>
+    <div class="flex gap-3 mt-6">
+      <button onclick="fecharModal('mod-paciente')" class="btn bg-slate-100 text-slate-600 flex-1 hover:bg-slate-200">Cancelar</button>
+      <button onclick="salvarPaciente()" class="btn btn-primary flex-1 shadow-md">Salvar Paciente</button>
+    </div>
   </div>
 </div>
 
-<div id="mod-user" class="modal">
-  <div class="card w-full max-w-sm space-y-3">
-    <h3 class="font-bold mb-2">Novo Membro</h3>
-    <input id="cad-u-nome" class="inp" placeholder="Nome"/>
-    <input id="cad-u-email" type="email" class="inp" placeholder="Email"/>
-    <select id="cad-u-nivel" class="inp" onchange="document.getElementById('cad-u-setor').classList.toggle('hidden', this.value !== 'estagiario')">
-      <option value="estagiario">Estagiário (Alocado em Setor)</option><option value="espectador">Espectador (Professora - Leitura)</option><option value="admin">Administrador (Controle Total)</option>
+<div id="mod-user" class="modal-overlay">
+  <div class="card modal-box p-6 space-y-4">
+    <h3 class="text-xl font-bold text-slate-800">Novo Membro da Equipe</h3>
+    <input id="cad-u-nome" class="inp" placeholder="Nome Completo"/>
+    <input id="cad-u-email" type="email" class="inp" placeholder="E-mail de Acesso"/>
+    <select id="cad-u-nivel" class="inp font-semibold" onchange="document.getElementById('cad-u-setor').classList.toggle('hidden', this.value !== 'estagiario')">
+      <option value="estagiario">Estagiário (Alocado em Setor)</option>
+      <option value="espectador">Espectador (Professora - Somente Leitura)</option>
+      <option value="admin">Administrador (Gestão Total)</option>
     </select>
     <select id="cad-u-setor" class="inp"></select>
-    <input id="cad-u-senha" type="password" class="inp" placeholder="Senha Provisória"/>
-    <div class="flex gap-2 mt-4"><button onclick="document.getElementById('mod-user').classList.remove('active')" class="btn bg-slate-200 flex-1 text-slate-700">Cancelar</button><button onclick="salvarUser()" class="btn btn-primary flex-1">Criar</button></div>
+    <input id="cad-u-senha" type="password" class="inp" placeholder="Definir Senha"/>
+    <div class="flex gap-3 mt-6">
+      <button onclick="fecharModal('mod-user')" class="btn bg-slate-100 text-slate-600 flex-1 hover:bg-slate-200">Cancelar</button>
+      <button onclick="salvarUser()" class="btn btn-primary flex-1 shadow-md">Cadastrar</button>
+    </div>
   </div>
 </div>
 
-<div id="mod-setor" class="modal">
-  <div class="card w-full max-w-sm">
-    <h3 class="font-bold mb-4">Nova Ala/Setor</h3>
-    <input id="cad-s-nome" class="inp mb-4" placeholder="Nome do Setor"/>
-    <div class="flex gap-2"><button onclick="document.getElementById('mod-setor').classList.remove('active')" class="btn bg-slate-200 flex-1 text-slate-700">Cancelar</button><button onclick="salvarSetor()" class="btn btn-primary flex-1">Criar</button></div>
+<div id="mod-setor" class="modal-overlay">
+  <div class="card modal-box p-6">
+    <h3 class="text-xl font-bold text-slate-800 mb-4">Cadastrar Nova Ala/Setor</h3>
+    <input id="cad-s-nome" class="inp mb-6" placeholder="Nome (Ex: UTI Covid)"/>
+    <div class="flex gap-3">
+      <button onclick="fecharModal('mod-setor')" class="btn bg-slate-100 text-slate-600 flex-1 hover:bg-slate-200">Cancelar</button>
+      <button onclick="salvarSetor()" class="btn btn-primary flex-1 shadow-md">Salvar</button>
+    </div>
   </div>
 </div>
 
-<div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-teal-800 text-white px-6 py-2 rounded-full font-bold shadow-lg z-50"></div>
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-xl font-bold shadow-2xl z-50 transition-all flex items-center gap-3">
+  <span id="toast-icon">✓</span>
+  <span id="toast-msg">Sucesso!</span>
+</div>
 
 <script src="/static/script.js"></script>
 </body>
