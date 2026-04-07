@@ -13,7 +13,7 @@ app.secret_key = 'ccih-secret-key-2024'
 
 # Conexão com o Turso (ou SQLite local se a URL não estiver no .env)
 TURSO_URL = os.getenv("libsql://cchi-vitorrastrep.aws-us-east-2.turso.io", "file:ccih.db")
-TURSO_TOKEN = os.getenv("libsql://cchi-vitorrastrep.aws-us-east-2.turso.io", "")
+TURSO_TOKEN = os.getenv("eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA", "")
 
 PROCEDIMENTOS = [
     "cateter venoso central punção", "cateter venoso central dessecação",
@@ -103,16 +103,15 @@ def init_db():
             );'''
         ])
         
-        # Criação de dados iniciais caso o banco esteja vazio
+        # Criação de dados iniciais SOMENTE do Admin e Setores
         setores = query_db("SELECT COUNT(*) as c FROM Setores")
         if setores[0]['c'] == 0:
             for s in ['UTI Adulto', 'UTI Neonatal', 'Clínica Médica']:
                 execute_db("INSERT INTO Setores (nome) VALUES (?)", (s,))
             
+            # Apenas a conta de Administrador
             execute_db("INSERT INTO Usuarios (nome, email, nivel_acesso, setor_id, senha) VALUES (?, ?, ?, ?, ?)",
                       ('Administrador', 'admin@ccih.com', 'admin', None, generate_password_hash('admin123')))
-            execute_db("INSERT INTO Usuarios (nome, email, nivel_acesso, setor_id, senha) VALUES (?, ?, ?, ?, ?)",
-                      ('Ana Lima', 'ana@ccih.com', 'estagiario', 1, generate_password_hash('estagio123')))
     finally:
         client.close()
 
@@ -313,6 +312,14 @@ def dashboard():
 def lista_procedimentos():
     return jsonify(PROCEDIMENTOS)
 
-if __name__ == '__main__':
+# ==========================================
+# INICIALIZAÇÃO FORÇADA PARA O RENDER
+# ==========================================
+try:
     init_db()
+    print("✓ Banco de dados (Turso/SQLite) inicializado com sucesso e tabelas verificadas.")
+except Exception as e:
+    print(f"ERRO CRÍTICO ao inicializar o banco de dados: {e}")
+
+if __name__ == '__main__':
     app.run(debug=True, port=5000)
