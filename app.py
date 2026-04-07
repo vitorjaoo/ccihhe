@@ -18,9 +18,6 @@ app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
 TURSO_URL = os.environ.get('libsql://cchi-vitorrastrep.aws-us-east-2.turso.io')
 TURSO_TOKEN = os.environ.get('eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU2MDUxNDMsImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.tpWLgFLeSPFZwn65LYV9pWzwASNdyfgfdOVBUjWc8rW1OZg4_rHMjbgMIETPoKSlen4_-1_UobSY3wDxa2NrDA')
 
-if not TURSO_URL or not TURSO_TOKEN:
-    raise RuntimeError("[CCIH] ERRO CRÍTICO: TURSO_URL e TURSO_TOKEN são obrigatórios! Defina as variáveis de ambiente.")
-
 print(f"[CCIH] Conectando ao banco: {TURSO_URL}")
 
 
