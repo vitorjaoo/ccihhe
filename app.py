@@ -382,13 +382,23 @@ def get_pacientes():
     """
     if nivel == 'estagiario' and setor_id:
         rows = rows_to_list(conn.execute(
-            base_query + " WHERE p.setor_id_atual=? ORDER BY p.nome",
+            base_query + " WHERE p.setor_id_atual=? AND p.status='internado' ORDER BY p.nome",
             (setor_id,)
         ).fetchall())
     else:
         rows = rows_to_list(conn.execute(
-            base_query + " ORDER BY p.setor_nome, p.nome"
+            base_query + " WHERE p.status='internado' ORDER BY p.setor_nome, p.nome"
         ).fetchall())
+
+    # CORREÇÃO: Anexar os procedimentos e infeções para o JavaScript não falhar
+    for p in rows:
+        p['procedimentos'] = rows_to_list(conn.execute(
+            "SELECT * FROM procedimentos WHERE paciente_id=? AND status='ativo'", (p['id'],)
+        ).fetchall())
+        p['infeccoes'] = rows_to_list(conn.execute(
+            "SELECT * FROM infeccoes_notificadas WHERE paciente_id=?", (p['id'],)
+        ).fetchall())
+
     conn.close()
     return jsonify(rows)
 
@@ -406,31 +416,41 @@ def create_paciente():
     if not nome:
         return jsonify({'error': 'Nome obrigatório'}), 400
 
+    # CORREÇÃO: Converter campos em branco para NULL para não gerar Erro 500
     setor_id = data.get('setor_id')
     if not setor_id or str(setor_id).strip() == '':
         setor_id = None
+        
+    idade = data.get('idade')
+    if not idade or str(idade).strip() == '':
+        idade = None
 
     if nivel == 'estagiario':
         setor_id = session['setor_id']
 
     conn = get_db()
-    cursor = conn.execute("""
-        INSERT INTO pacientes(nome, idade, leito, prontuario, fone, setor_id_atual, status)
-        VALUES(?,?,?,?,?,?,'internado')
-    """, (
-        nome,
-        data.get('idade'),
-        data.get('leito', '').strip(),
-        data.get('prontuario', '').strip(),
-        data.get('fone', '').strip(),
-        setor_id
-    ))
-    conn.commit()
-    pid = cursor.lastrowid
-    pac = row_to_dict(conn.execute(
-        "SELECT p.*, s.nome as setor_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE p.id=?",
-        (pid,)
-    ).fetchone())
+    try:
+        cursor = conn.execute("""
+            INSERT INTO pacientes(nome, idade, leito, prontuario, fone, setor_id_atual, status)
+            VALUES(?,?,?,?,?,?,'internado')
+        """, (
+            nome,
+            idade,
+            data.get('leito', '').strip(),
+            data.get('prontuario', '').strip(),
+            data.get('fone', '').strip(),
+            setor_id
+        ))
+        conn.commit()
+        pid = cursor.lastrowid
+        pac = row_to_dict(conn.execute(
+            "SELECT p.*, s.nome as setor_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE p.id=?",
+            (pid,)
+        ).fetchone())
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': f'Falha no banco de dados: {str(e)}'}), 500
+
     conn.close()
     return jsonify(pac), 201
 
