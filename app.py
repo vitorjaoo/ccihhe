@@ -5,6 +5,9 @@ from datetime import datetime, date
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, session
 import libsql_client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
@@ -12,8 +15,8 @@ app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
 # ---------------------------------------------------------------------------
 # DATABASE SETUP (Turso Cloud Database Adapter)
 # ---------------------------------------------------------------------------
-TURSO_URL = os.environ.get('libsql://cchi-vitorrastrep.aws-us-east-2.turso.io', 'libsql://cchi-vitorrastrep.aws-us-east-2.turso.io')
-TURSO_TOKEN = os.environ.get('eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA')
+TURSO_URL = os.environ.get('libsql://cchi-vitorrastrep.aws-us-east-2.turso.io', 'file:ccih.db')
+TURSO_TOKEN = os.environ.get('eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA', '')
 
 class TursoCursor:
     def __init__(self, rs=None):
@@ -44,7 +47,10 @@ class TursoCursor:
 
 class TursoAdapter:
     def __init__(self):
-        self.client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
+        if TURSO_URL.startswith("file:"):
+            self.client = libsql_client.create_client_sync(url=TURSO_URL)
+        else:
+            self.client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
 
     def cursor(self):
         return self
@@ -170,7 +176,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
-
 def not_readonly(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -178,16 +183,6 @@ def not_readonly(f):
             return jsonify({'error': 'Acesso somente leitura'}), 403
         return f(*args, **kwargs)
     return decorated
-
-
-def row_to_dict(row):
-    if row is None:
-        return None
-    return dict(row)
-
-
-def rows_to_list(rows):
-    return [dict(r) for r in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +202,7 @@ def login():
         return jsonify({'error': 'Campos obrigatórios'}), 400
 
     conn = get_db()
-    user = row_to_dict(conn.execute("SELECT * FROM usuarios WHERE email=?", (email,)).fetchone())
+    user = conn.execute("SELECT * FROM usuarios WHERE email=?", (email,)).fetchone()
     conn.close()
 
     if not user or user['senha'] != hash_password(senha):
@@ -251,7 +246,7 @@ def me():
 @login_required
 def get_setores():
     conn = get_db()
-    rows = rows_to_list(conn.execute("SELECT * FROM setores ORDER BY nome").fetchall())
+    rows = conn.execute("SELECT * FROM setores ORDER BY nome").fetchall()
     conn.close()
     return jsonify(rows)
 
@@ -270,7 +265,7 @@ def create_setor():
     try:
         conn.execute("INSERT INTO setores(nome) VALUES(?)", (nome,))
         conn.commit()
-        setor = row_to_dict(conn.execute("SELECT * FROM setores WHERE nome=?", (nome,)).fetchone())
+        setor = conn.execute("SELECT * FROM setores WHERE nome=?", (nome,)).fetchone()
     except Exception:
         conn.close()
         return jsonify({'error': 'Setor já existe'}), 409
@@ -300,11 +295,11 @@ def get_usuarios():
     if session['nivel_acesso'] not in ('admin', 'espectador'):
         return jsonify({'error': 'Sem permissão'}), 403
     conn = get_db()
-    rows = rows_to_list(conn.execute("""
+    rows = conn.execute("""
         SELECT u.id, u.nome, u.email, u.nivel_acesso, u.setor_id, s.nome as setor_nome
         FROM usuarios u LEFT JOIN setores s ON s.id=u.setor_id
         ORDER BY u.nome
-    """).fetchall())
+    """).fetchall()
     conn.close()
     return jsonify(rows)
 
@@ -334,7 +329,7 @@ def create_usuario():
             (nome, email, hash_password(senha), nivel, setor_id)
         )
         conn.commit()
-        u = row_to_dict(conn.execute("SELECT id,nome,email,nivel_acesso,setor_id FROM usuarios WHERE email=?", (email,)).fetchone())
+        u = conn.execute("SELECT id,nome,email,nivel_acesso,setor_id FROM usuarios WHERE email=?", (email,)).fetchone()
     except Exception:
         conn.close()
         return jsonify({'error': 'Email já cadastrado'}), 409
@@ -358,7 +353,7 @@ def delete_usuario(uid):
 
 
 # ---------------------------------------------------------------------------
-# ROUTES — PACIENTES (CORREÇÕES APLICADAS)
+# ROUTES — PACIENTES
 # ---------------------------------------------------------------------------
 @app.route('/api/pacientes', methods=['GET'])
 @login_required
@@ -373,22 +368,22 @@ def get_pacientes():
         LEFT JOIN setores s ON s.id = p.setor_id_atual
     """
     if nivel == 'estagiario' and setor_id:
-        rows = rows_to_list(conn.execute(
+        rows = conn.execute(
             base_query + " WHERE p.setor_id_atual=? AND p.status='internado' ORDER BY p.nome",
             (setor_id,)
-        ).fetchall())
+        ).fetchall()
     else:
-        rows = rows_to_list(conn.execute(
+        rows = conn.execute(
             base_query + " WHERE p.status='internado' ORDER BY p.setor_nome, p.nome"
-        ).fetchall())
+        ).fetchall()
 
     for p in rows:
-        p['procedimentos'] = rows_to_list(conn.execute(
+        p['procedimentos'] = conn.execute(
             "SELECT * FROM procedimentos WHERE paciente_id=? AND status='ativo'", (p['id'],)
-        ).fetchall())
-        p['infeccoes'] = rows_to_list(conn.execute(
+        ).fetchall()
+        p['infeccoes'] = conn.execute(
             "SELECT * FROM infeccoes_notificadas WHERE paciente_id=?", (p['id'],)
-        ).fetchall())
+        ).fetchall()
 
     conn.close()
     return jsonify(rows)
@@ -433,10 +428,10 @@ def create_paciente():
         ))
         conn.commit()
         pid = cursor.lastrowid
-        pac = row_to_dict(conn.execute(
+        pac = conn.execute(
             "SELECT p.*, s.nome as setor_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE p.id=?",
             (pid,)
-        ).fetchone())
+        ).fetchone()
     except Exception as e:
         conn.close()
         return jsonify({'error': f'Falha no banco de dados: {str(e)}'}), 500
@@ -449,10 +444,11 @@ def create_paciente():
 @login_required
 def get_paciente(pid):
     conn = get_db()
-    pac = row_to_dict(conn.execute(
+    pac = conn.execute(
         "SELECT p.*, s.nome as setor_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE p.id=?",
         (pid,)
-    ).fetchone())
+    ).fetchone()
+    
     if not pac:
         conn.close()
         return jsonify({'error': 'Não encontrado'}), 404
@@ -462,18 +458,16 @@ def get_paciente(pid):
         conn.close()
         return jsonify({'error': 'Sem permissão'}), 403
 
-    pac['registros'] = rows_to_list(conn.execute(
-        "SELECT * FROM registros_diarios WHERE paciente_id=? ORDER BY data DESC",
-        (pid,)
-    ).fetchall())
-    pac['procedimentos'] = rows_to_list(conn.execute(
-        "SELECT * FROM procedimentos WHERE paciente_id=? ORDER BY data_insercao DESC",
-        (pid,)
-    ).fetchall())
-    pac['infeccoes'] = rows_to_list(conn.execute(
-        "SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY data_notificacao DESC",
-        (pid,)
-    ).fetchall())
+    pac['registros'] = conn.execute(
+        "SELECT * FROM registros_diarios WHERE paciente_id=? ORDER BY data DESC", (pid,)
+    ).fetchall()
+    pac['procedimentos'] = conn.execute(
+        "SELECT * FROM procedimentos WHERE paciente_id=? ORDER BY data_insercao DESC", (pid,)
+    ).fetchall()
+    pac['infeccoes'] = conn.execute(
+        "SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY data_notificacao DESC", (pid,)
+    ).fetchall()
+    
     conn.close()
     return jsonify(pac)
 
@@ -489,7 +483,8 @@ def dar_alta(pid):
 
     conn = get_db()
     nivel = session['nivel_acesso']
-    pac = row_to_dict(conn.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone())
+    pac = conn.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone()
+    
     if not pac:
         conn.close()
         return jsonify({'error': 'Não encontrado'}), 404
@@ -511,7 +506,7 @@ def dar_alta(pid):
 
 
 # ---------------------------------------------------------------------------
-# ROUTES — REGISTROS DIÁRIOS
+# ROUTES — REGISTROS DIÁRIOS E PROCEDIMENTOS
 # ---------------------------------------------------------------------------
 @app.route('/api/pacientes/<int:pid>/registros', methods=['POST'])
 @login_required
@@ -527,17 +522,13 @@ def add_registro(pid):
         (pid, data_reg, temperatura)
     )
     conn.commit()
-    reg = row_to_dict(conn.execute(
-        "SELECT * FROM registros_diarios WHERE paciente_id=? ORDER BY id DESC LIMIT 1",
-        (pid,)
-    ).fetchone())
+    reg = conn.execute(
+        "SELECT * FROM registros_diarios WHERE paciente_id=? ORDER BY id DESC LIMIT 1", (pid,)
+    ).fetchone()
     conn.close()
     return jsonify(reg), 201
 
 
-# ---------------------------------------------------------------------------
-# ROUTES — PROCEDIMENTOS
-# ---------------------------------------------------------------------------
 @app.route('/api/pacientes/<int:pid>/procedimentos', methods=['POST'])
 @login_required
 @not_readonly
@@ -554,10 +545,9 @@ def add_procedimento(pid):
         VALUES(?,?,?,'ativo')
     """, (pid, tipo, data_ins))
     conn.commit()
-    proc = row_to_dict(conn.execute(
-        "SELECT * FROM procedimentos WHERE paciente_id=? ORDER BY id DESC LIMIT 1",
-        (pid,)
-    ).fetchone())
+    proc = conn.execute(
+        "SELECT * FROM procedimentos WHERE paciente_id=? ORDER BY id DESC LIMIT 1", (pid,)
+    ).fetchone()
     conn.close()
     return jsonify(proc), 201
 
@@ -574,13 +564,13 @@ def remover_procedimento(proc_id):
         (data_rem, proc_id)
     )
     conn.commit()
-    proc = row_to_dict(conn.execute("SELECT * FROM procedimentos WHERE id=?", (proc_id,)).fetchone())
+    proc = conn.execute("SELECT * FROM procedimentos WHERE id=?", (proc_id,)).fetchone()
     conn.close()
     return jsonify(proc)
 
 
 # ---------------------------------------------------------------------------
-# ROUTES — INFECÇÕES
+# ROUTES — INFECÇÕES E MOTIVOS SAÍDA
 # ---------------------------------------------------------------------------
 TIPOS_INFECCAO = ['Trato Urinário', 'Sepse', 'Pneumonia', 'Ferida Operatória', 'Outra']
 
@@ -601,28 +591,24 @@ def add_infeccao(pid):
         (pid, tipo, data_not)
     )
     conn.commit()
-    inf = row_to_dict(conn.execute(
-        "SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY id DESC LIMIT 1",
-        (pid,)
-    ).fetchone())
+    inf = conn.execute(
+        "SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY id DESC LIMIT 1", (pid,)
+    ).fetchone()
     conn.close()
     return jsonify(inf), 201
 
 
-# ---------------------------------------------------------------------------
-# ROUTES — MOTIVOS DE SAÍDA
-# ---------------------------------------------------------------------------
 @app.route('/api/motivos_saida', methods=['GET'])
 @login_required
 def get_motivos():
     conn = get_db()
-    rows = rows_to_list(conn.execute("SELECT * FROM motivos_saida ORDER BY nome").fetchall())
+    rows = conn.execute("SELECT * FROM motivos_saida ORDER BY nome").fetchall()
     conn.close()
     return jsonify(rows)
 
 
 # ---------------------------------------------------------------------------
-# ROUTES — DASHBOARD / RELATÓRIOS
+# ROUTES — DASHBOARD / RELATÓRIOS REESCRITO E BLINDADO
 # ---------------------------------------------------------------------------
 @app.route('/api/dashboard/relatorios', methods=['GET'])
 @login_required
@@ -635,60 +621,91 @@ def relatorios():
     ano_mes = mes[:7]
 
     conn = get_db()
+    try:
+        # Pacientes com Alta
+        pac_alta_row = conn.execute("SELECT COUNT(DISTINCT id) as total FROM pacientes WHERE status='alta'").fetchone()
+        pacientes_alta = int(pac_alta_row['total']) if pac_alta_row else 0
 
-    pac_alta_row = conn.execute("SELECT COUNT(DISTINCT p.id) as total FROM pacientes p WHERE p.status='alta'").fetchone()
-    pacientes_alta = pac_alta_row[0] if pac_alta_row else 0
+        # Infeções Totais no Mês
+        inf_mes_row = conn.execute("SELECT COUNT(id) as total FROM infeccoes_notificadas WHERE strftime('%Y-%m', data_notificacao)=?", (ano_mes,)).fetchone()
+        total_inf = int(inf_mes_row['total']) if inf_mes_row else 0
 
-    infeccoes_mes = rows_to_list(conn.execute("SELECT * FROM infeccoes_notificadas WHERE strftime('%Y-%m', data_notificacao)=?", (ano_mes,)).fetchall())
-    total_inf = len(infeccoes_mes)
+        # Infeções por Tipo
+        por_tipo = conn.execute("SELECT tipo_infeccao, COUNT(id) as total FROM infeccoes_notificadas WHERE strftime('%Y-%m', data_notificacao)=? GROUP BY tipo_infeccao", (ano_mes,)).fetchall()
+        
+        def get_inf(tipo):
+            for item in por_tipo:
+                if item['tipo_infeccao'] == tipo:
+                    return int(item['total'])
+            return 0
 
-    def count_tipo(tipo):
-        return sum(1 for i in infeccoes_mes if i['tipo_infeccao'] == tipo)
+        inf_urinario = get_inf('Trato Urinário')
+        inf_sepse = get_inf('Sepse')
+        inf_pneumonia = get_inf('Pneumonia')
+        inf_cirurgica = get_inf('Ferida Operatória')
 
-    inf_urinario = count_tipo('Trato Urinário')
-    inf_sepse = count_tipo('Sepse')
-    inf_pneumonia = count_tipo('Pneumonia')
-    inf_cirurgica = count_tipo('Ferida Operatória')
+        taxa_geral = round((total_inf / pacientes_alta * 100) if pacientes_alta > 0 else 0, 2)
+        def taxa_prop(n): return round((n / total_inf * 100) if total_inf > 0 else 0, 2)
 
-    taxa_geral = round((total_inf / pacientes_alta * 100) if pacientes_alta > 0 else 0, 2)
-    def taxa_prop(n): return round((n / total_inf * 100) if total_inf > 0 else 0, 2)
+        # -------------------------------------------------------
+        # CÁLCULO SEGURO E RÁPIDO PARA TAXAS CRUZADAS
+        # -------------------------------------------------------
+        
+        # 1. Sepse vs Cateter
+        cateteres = ('cateter venoso central punção', 'cateter venoso central dessecação', 'cateter swan ganz')
+        tot_cateter_row = conn.execute("SELECT COUNT(DISTINCT paciente_id) as total FROM procedimentos WHERE lower(tipo_procedimento) IN (?, ?, ?)", cateteres).fetchone()
+        tot_cateter = int(tot_cateter_row['total']) if tot_cateter_row else 0
 
-    cateteres = ['cateter venoso central punção', 'cateter venoso central dessecação', 'cateter swan ganz']
-    pac_cateter_ids = set(row_to_dict(r)['paciente_id'] for r in conn.execute("SELECT DISTINCT paciente_id FROM procedimentos WHERE lower(tipo_procedimento) IN ({})".format(','.join('?' * len(cateteres))), cateteres).fetchall())
+        sepse_cat_row = conn.execute("""
+            SELECT COUNT(DISTINCT i.paciente_id) as total 
+            FROM infeccoes_notificadas i
+            JOIN procedimentos pr ON i.paciente_id = pr.paciente_id
+            WHERE i.tipo_infeccao = 'Sepse' 
+              AND lower(pr.tipo_procedimento) IN (?, ?, ?)
+              AND strftime('%Y-%m', i.data_notificacao) = ?
+        """, cateteres + (ano_mes,)).fetchone()
+        pac_sepse_cateter = int(sepse_cat_row['total']) if sepse_cat_row else 0
+        taxa_cateter = round((pac_sepse_cateter / tot_cateter * 100) if tot_cateter > 0 else 0, 2)
 
-    if pac_cateter_ids:
-        pac_sepse_cateter_row = conn.execute("SELECT COUNT(DISTINCT i.paciente_id) FROM infeccoes_notificadas i WHERE i.tipo_infeccao='Sepse' AND i.paciente_id IN ({}) AND strftime('%Y-%m', i.data_notificacao)=?".format(','.join('?' * len(pac_cateter_ids))), list(pac_cateter_ids) + [ano_mes]).fetchone()
-        pac_sepse_cateter = pac_sepse_cateter_row[0] if pac_sepse_cateter_row else 0
-    else:
-        pac_sepse_cateter = 0
+        # 2. Pneumonia vs Respirador
+        respiradores = ('respiração artificial', 'entubação')
+        tot_resp_row = conn.execute("SELECT COUNT(DISTINCT paciente_id) as total FROM procedimentos WHERE lower(tipo_procedimento) IN (?, ?)", respiradores).fetchone()
+        tot_resp = int(tot_resp_row['total']) if tot_resp_row else 0
 
-    taxa_cateter = round((pac_sepse_cateter / len(pac_cateter_ids) * 100) if pac_cateter_ids else 0, 2)
+        pneu_resp_row = conn.execute("""
+            SELECT COUNT(DISTINCT i.paciente_id) as total 
+            FROM infeccoes_notificadas i
+            JOIN procedimentos pr ON i.paciente_id = pr.paciente_id
+            WHERE i.tipo_infeccao = 'Pneumonia' 
+              AND lower(pr.tipo_procedimento) IN (?, ?)
+              AND strftime('%Y-%m', i.data_notificacao) = ?
+        """, respiradores + (ano_mes,)).fetchone()
+        pac_pneumonia_resp = int(pneu_resp_row['total']) if pneu_resp_row else 0
+        taxa_respirador = round((pac_pneumonia_resp / tot_resp * 100) if tot_resp > 0 else 0, 2)
 
-    respiradores = ['respiração artificial', 'entubação']
-    pac_resp_ids = set(row_to_dict(r)['paciente_id'] for r in conn.execute("SELECT DISTINCT paciente_id FROM procedimentos WHERE lower(tipo_procedimento) IN (?,?)", respiradores).fetchall())
+        # 3. Urinário vs Sonda
+        tot_sonda_row = conn.execute("SELECT COUNT(DISTINCT paciente_id) as total FROM procedimentos WHERE lower(tipo_procedimento) = 'sonda vesical'").fetchone()
+        tot_sonda = int(tot_sonda_row['total']) if tot_sonda_row else 0
 
-    if pac_resp_ids:
-        pac_pneumonia_resp_row = conn.execute("SELECT COUNT(DISTINCT i.paciente_id) FROM infeccoes_notificadas i WHERE i.tipo_infeccao='Pneumonia' AND i.paciente_id IN ({}) AND strftime('%Y-%m', i.data_notificacao)=?".format(','.join('?' * len(pac_resp_ids))), list(pac_resp_ids) + [ano_mes]).fetchone()
-        pac_pneumonia_resp = pac_pneumonia_resp_row[0] if pac_pneumonia_resp_row else 0
-    else:
-        pac_pneumonia_resp = 0
+        uri_sonda_row = conn.execute("""
+            SELECT COUNT(DISTINCT i.paciente_id) as total 
+            FROM infeccoes_notificadas i
+            JOIN procedimentos pr ON i.paciente_id = pr.paciente_id
+            WHERE i.tipo_infeccao = 'Trato Urinário' 
+              AND lower(pr.tipo_procedimento) = 'sonda vesical'
+              AND strftime('%Y-%m', i.data_notificacao) = ?
+        """, (ano_mes,)).fetchone()
+        pac_urinario_sonda = int(uri_sonda_row['total']) if uri_sonda_row else 0
+        taxa_sonda = round((pac_urinario_sonda / tot_sonda * 100) if tot_sonda > 0 else 0, 2)
 
-    taxa_respirador = round((pac_pneumonia_resp / len(pac_resp_ids) * 100) if pac_resp_ids else 0, 2)
+        # -------------------------------------------------------
+        # Relatórios Auxiliares
+        por_setor = conn.execute("SELECT s.nome as setor, COUNT(p.id) as total FROM pacientes p JOIN setores s ON s.id=p.setor_id_atual WHERE p.status='internado' GROUP BY s.id ORDER BY s.nome").fetchall()
+        ultimas_inf = conn.execute("SELECT i.*, p.nome as paciente_nome, s.nome as setor_nome FROM infeccoes_notificadas i JOIN pacientes p ON p.id=i.paciente_id LEFT JOIN setores s ON s.id=p.setor_id_atual ORDER BY i.id DESC LIMIT 10").fetchall()
 
-    pac_sonda_ids = set(row_to_dict(r)['paciente_id'] for r in conn.execute("SELECT DISTINCT paciente_id FROM procedimentos WHERE lower(tipo_procedimento)='sonda vesical'").fetchall())
-
-    if pac_sonda_ids:
-        pac_urinario_sonda_row = conn.execute("SELECT COUNT(DISTINCT i.paciente_id) FROM infeccoes_notificadas i WHERE i.tipo_infeccao='Trato Urinário' AND i.paciente_id IN ({}) AND strftime('%Y-%m', i.data_notificacao)=?".format(','.join('?' * len(pac_sonda_ids))), list(pac_sonda_ids) + [ano_mes]).fetchone()
-        pac_urinario_sonda = pac_urinario_sonda_row[0] if pac_urinario_sonda_row else 0
-    else:
-        pac_urinario_sonda = 0
-
-    taxa_sonda = round((pac_urinario_sonda / len(pac_sonda_ids) * 100) if pac_sonda_ids else 0, 2)
-
-    por_setor = rows_to_list(conn.execute("SELECT s.nome as setor, COUNT(p.id) as total FROM pacientes p JOIN setores s ON s.id=p.setor_id_atual WHERE p.status='internado' GROUP BY s.id ORDER BY s.nome").fetchall())
-    por_tipo = rows_to_list(conn.execute("SELECT tipo_infeccao, COUNT(*) as total FROM infeccoes_notificadas WHERE strftime('%Y-%m', data_notificacao)=? GROUP BY tipo_infeccao", (ano_mes,)).fetchall())
-
-    ultimas_inf = rows_to_list(conn.execute("SELECT i.*, p.nome as paciente_nome, s.nome as setor_nome FROM infeccoes_notificadas i JOIN pacientes p ON p.id=i.paciente_id LEFT JOIN setores s ON s.id=p.setor_id_atual ORDER BY i.id DESC LIMIT 10").fetchall())
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': f'Falha no cálculo SQL: {str(e)}'}), 500
 
     conn.close()
 
@@ -707,7 +724,7 @@ def relatorios():
         'totais': {
             'pacientes_alta': pacientes_alta,
             'infeccoes_mes': total_inf,
-            'pacientes_internados': sum(s['total'] for s in por_setor),
+            'pacientes_internados': sum(int(s['total']) for s in por_setor),
         },
         'por_setor': por_setor,
         'por_tipo': por_tipo,
