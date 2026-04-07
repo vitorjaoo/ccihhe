@@ -1,34 +1,69 @@
 import os
-import json
 import hashlib
 from datetime import datetime, date
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, session
+import libsql_client
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
 
 # ---------------------------------------------------------------------------
-# DATABASE SETUP (SQLite via sqlite3 — drop-in for Turso via libsql-client)
+# DATABASE SETUP (Adaptador Turso Inteligente)
 # ---------------------------------------------------------------------------
-try:
-    import libsql_client as libsql
-    USE_TURSO = True
-    TURSO_URL = os.environ.get('libsql://cchi-vitorrastrep.aws-us-east-2.turso.io', '')
-    TURSO_TOKEN = os.environ.get('eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA', '')
-except ImportError:
-    USE_TURSO = False
+TURSO_URL = os.environ.get('libsql://cchi-vitorrastrep.aws-us-east-2.turso.io', '')
+TURSO_TOKEN = os.environ.get('eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA', '')
 
-import sqlite3
-DB_PATH = os.environ.get('DB_PATH', 'ccih.db')
+class TursoCursor:
+    def __init__(self, rs=None):
+        if rs:
+            # Converte os resultados do Turso no formato dicionário que as suas rotas esperam
+            self.rows = [dict(zip(rs.columns, row)) for row in rs.rows]
+            self.lastrowid = rs.last_insert_rowid
+        else:
+            self.rows = []
+            self.lastrowid = None
 
+    def fetchone(self):
+        return self.rows[0] if self.rows else None
+
+    def fetchall(self):
+        return self.rows
+
+class TursoAdapter:
+    def __init__(self):
+        if not TURSO_URL:
+            # Fallback seguro para modo offline se as chaves não existirem
+            self.client = libsql_client.create_client_sync(url="file:ccih.db")
+        elif TURSO_URL.startswith("file:"):
+            self.client = libsql_client.create_client_sync(url=TURSO_URL)
+        else:
+            self.client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
+
+    def cursor(self):
+        return self
+
+    def execute(self, sql, params=()):
+        # O Turso espera tuplas ou listas para os parâmetros
+        if not isinstance(params, (tuple, list)):
+            params = (params,)
+        rs = self.client.execute(sql, params)
+        return TursoCursor(rs)
+
+    def executescript(self, sql_script):
+        # Separa os múltiplos comandos e executa-os em batch no Turso
+        statements = [s.strip() for s in sql_script.split(';') if s.strip()]
+        if statements:
+            self.client.batch(statements)
+
+    def commit(self):
+        pass # O Turso já tem auto-commit via client API
+
+    def close(self):
+        self.client.close()
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+    return TursoAdapter()
 
 
 def hash_password(pw: str) -> str:
@@ -143,13 +178,10 @@ def not_readonly(f):
 
 
 def row_to_dict(row):
-    if row is None:
-        return None
-    return dict(row)
-
+    return row  # O TursoCursor já devolve um dicionário
 
 def rows_to_list(rows):
-    return [dict(r) for r in rows]
+    return rows # O TursoCursor já devolve uma lista de dicionários
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +267,7 @@ def create_setor():
         conn.execute("INSERT INTO setores(nome) VALUES(?)", (nome,))
         conn.commit()
         setor = row_to_dict(conn.execute("SELECT * FROM setores WHERE nome=?", (nome,)).fetchone())
-    except sqlite3.IntegrityError:
+    except Exception:
         conn.close()
         return jsonify({'error': 'Setor já existe'}), 409
     conn.close()
@@ -299,7 +331,7 @@ def create_usuario():
         )
         conn.commit()
         u = row_to_dict(conn.execute("SELECT id,nome,email,nivel_acesso,setor_id FROM usuarios WHERE email=?", (email,)).fetchone())
-    except sqlite3.IntegrityError:
+    except Exception:
         conn.close()
         return jsonify({'error': 'Email já cadastrado'}), 409
     conn.close()
@@ -367,7 +399,7 @@ def create_paciente():
         setor_id = session['setor_id']
 
     conn = get_db()
-    conn.execute("""
+    cursor = conn.execute("""
         INSERT INTO pacientes(nome, idade, leito, prontuario, fone, setor_id_atual, status)
         VALUES(?,?,?,?,?,?,'internado')
     """, (
@@ -379,7 +411,7 @@ def create_paciente():
         setor_id
     ))
     conn.commit()
-    pid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    pid = cursor.lastrowid
     pac = row_to_dict(conn.execute(
         "SELECT p.*, s.nome as setor_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE p.id=?",
         (pid,)
@@ -585,7 +617,7 @@ def relatorios():
     pacientes_alta = conn.execute("""
         SELECT COUNT(DISTINCT p.id) as total FROM pacientes p
         WHERE p.status='alta'
-    """).fetchone()[0]
+    """).fetchone()['total']
 
     # Infecções no mês
     infeccoes_mes = rows_to_list(conn.execute("""
@@ -617,13 +649,13 @@ def relatorios():
     """.format(','.join('?' * len(cateteres))), cateteres).fetchall())
 
     pac_sepse_cateter = conn.execute("""
-        SELECT COUNT(DISTINCT i.paciente_id) FROM infeccoes_notificadas i
+        SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i
         WHERE i.tipo_infeccao='Sepse'
         AND i.paciente_id IN ({})
         AND strftime('%Y-%m', i.data_notificacao)=?
     """.format(','.join('?' * len(pac_cateter_ids)) if pac_cateter_ids else '0'),
         list(pac_cateter_ids) + [ano_mes] if pac_cateter_ids else [ano_mes]
-    ).fetchone()[0]
+    ).fetchone()['total']
 
     taxa_cateter = round((pac_sepse_cateter / len(pac_cateter_ids) * 100) if pac_cateter_ids else 0, 2)
 
@@ -635,13 +667,13 @@ def relatorios():
     """, respiradores).fetchall())
 
     pac_pneumonia_resp = conn.execute("""
-        SELECT COUNT(DISTINCT i.paciente_id) FROM infeccoes_notificadas i
+        SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i
         WHERE i.tipo_infeccao='Pneumonia'
         AND i.paciente_id IN ({})
         AND strftime('%Y-%m', i.data_notificacao)=?
     """.format(','.join('?' * len(pac_resp_ids)) if pac_resp_ids else '0'),
         list(pac_resp_ids) + [ano_mes] if pac_resp_ids else [ano_mes]
-    ).fetchone()[0]
+    ).fetchone()['total']
 
     taxa_respirador = round((pac_pneumonia_resp / len(pac_resp_ids) * 100) if pac_resp_ids else 0, 2)
 
@@ -652,13 +684,13 @@ def relatorios():
     """).fetchall())
 
     pac_urinario_sonda = conn.execute("""
-        SELECT COUNT(DISTINCT i.paciente_id) FROM infeccoes_notificadas i
+        SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i
         WHERE i.tipo_infeccao='Trato Urinário'
         AND i.paciente_id IN ({})
         AND strftime('%Y-%m', i.data_notificacao)=?
     """.format(','.join('?' * len(pac_sonda_ids)) if pac_sonda_ids else '0'),
         list(pac_sonda_ids) + [ano_mes] if pac_sonda_ids else [ano_mes]
-    ).fetchone()[0]
+    ).fetchone()['total']
 
     taxa_sonda = round((pac_urinario_sonda / len(pac_sonda_ids) * 100) if pac_sonda_ids else 0, 2)
 
