@@ -1,5 +1,2 @@
-Flask
-Werkzeug
-libsql-client
-python-dotenv
-gunicorn
+flask>=3.0.0
+gunicorn>=21.0.0
