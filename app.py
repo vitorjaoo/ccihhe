@@ -4,12 +4,11 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-from datetime import date
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'ccih-secret-key-2024'
+app.secret_key = 'ccih-secret-key-2024-v2'
 
 TURSO_URL = os.getenv("libsql://cchi-vitorrastrep.aws-us-east-2.turso.io", "file:ccih.db")
 TURSO_TOKEN = os.getenv("eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA", "")
@@ -46,17 +45,15 @@ def init_db():
             "CREATE TABLE IF NOT EXISTS Procedimentos (id INTEGER PRIMARY KEY AUTOINCREMENT, paciente_id INTEGER, tipo_procedimento TEXT, data_insercao TEXT, data_remocao TEXT, status TEXT DEFAULT 'ativo');",
             "CREATE TABLE IF NOT EXISTS Infeccoes_Notificadas (id INTEGER PRIMARY KEY AUTOINCREMENT, paciente_id INTEGER, tipo_infeccao TEXT, data_notificacao TEXT);"
         ])
-        # Admin Padrão
         if not db.execute("SELECT * FROM Usuarios WHERE email='admin@ccih.com'").rows:
             db.execute("INSERT INTO Usuarios (nome, email, senha, nivel_acesso) VALUES (?,?,?,?)",
-                       ('Admin Geral', 'admin@ccih.com', generate_password_hash('admin123'), 'admin'))
+                       ('Administrador Geral', 'admin@ccih.com', generate_password_hash('admin123'), 'admin'))
 
-# Bloqueio global de escrita para o Espectador
 @app.before_request
 def check_espectador_permissions():
     if request.method in ['POST', 'PUT', 'DELETE']:
         if session.get('nivel_acesso') == 'espectador' and request.path.startswith('/api/') and request.path not in ['/api/login', '/api/logout']:
-            return jsonify({'error': 'Acesso apenas para leitura.'}), 403
+            return jsonify({'error': 'Acesso apenas para leitura (Espectador).'}), 403
 
 def login_required(f):
     @wraps(f)
@@ -75,13 +72,45 @@ def login():
     data = request.json
     users = query_db("SELECT * FROM Usuarios WHERE email=?", (data.get('email'),))
     if users and check_password_hash(users[0]['senha'], data.get('senha', '')):
-        u = users[0]
-        session.update({'user_id': u['id'], 'nome': u['nome'], 'nivel_acesso': u['nivel_acesso'], 'setor_id': u['setor_id']})
+        session.update({'user_id': users[0]['id'], 'nome': users[0]['nome'], 'nivel_acesso': users[0]['nivel_acesso'], 'setor_id': users[0]['setor_id']})
         return jsonify({'ok': True})
-    return jsonify({'error': 'Credenciais inválidas'}), 401
+    return jsonify({'error': 'Email ou senha inválidos'}), 401
 
 @app.route('/api/logout', methods=['POST'])
 def logout(): session.clear(); return jsonify({'ok': True})
+
+@app.route('/api/auxiliares', methods=['GET'])
+@login_required
+def get_auxiliares():
+    return jsonify({
+        'setores': query_db("SELECT * FROM Setores ORDER BY nome"),
+        'usuarios': query_db("SELECT u.id, u.nome, u.email, u.nivel_acesso, s.nome as setor_nome FROM Usuarios u LEFT JOIN Setores s ON u.setor_id=s.id ORDER BY u.nome"),
+        'procedimentos': PROCEDIMENTOS_LISTA
+    })
+
+@app.route('/api/setores', methods=['POST'])
+@login_required
+def add_setor():
+    if session.get('nivel_acesso') != 'admin': return jsonify({'error': 'Acesso negado'}), 403
+    try:
+        execute_db("INSERT INTO Setores (nome) VALUES (?)", (request.json['nome'],))
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': 'Erro: Setor já existe ou falha no banco.'}), 400
+
+@app.route('/api/usuarios', methods=['POST'])
+@login_required
+def add_user():
+    if session.get('nivel_acesso') != 'admin': return jsonify({'error': 'Acesso negado'}), 403
+    d = request.json
+    setor_id = d.get('setor_id')
+    if not setor_id or str(setor_id).strip() == '': setor_id = None
+    try:
+        execute_db("INSERT INTO Usuarios (nome, email, senha, nivel_acesso, setor_id) VALUES (?,?,?,?,?)",
+                   (d['nome'], d['email'], generate_password_hash(d['senha']), d['nivel_acesso'], setor_id))
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': 'Erro: E-mail já cadastrado.'}), 400
 
 @app.route('/api/pacientes', methods=['GET', 'POST'])
 @login_required
@@ -93,7 +122,6 @@ def handle_pacientes():
                    (d['nome'], d.get('idade'), d.get('leito'), d.get('prontuario'), d.get('fone'), setor))
         return jsonify({'ok': True})
     
-    # GET: Se for estagiário, vê só o setor. Admin/Espectador veem tudo (para a lista global)
     if session.get('nivel_acesso') == 'estagiario':
         pacs = query_db("SELECT p.*, s.nome as setor_nome FROM Pacientes p LEFT JOIN Setores s ON p.setor_id_atual = s.id WHERE p.setor_id_atual=? AND p.status='ativo' ORDER BY p.leito", (session.get('setor_id'),))
     else:
@@ -130,7 +158,6 @@ def notificar_infeccao():
 @app.route('/api/dashboard/relatorios', methods=['GET'])
 @login_required
 def relatorios():
-    # Coleta de contagens brutas para as fórmulas
     tot_altas = query_db("SELECT COUNT(*) as c FROM Pacientes WHERE status='alta'")[0]['c']
     tot_infec = query_db("SELECT COUNT(*) as c FROM Infeccoes_Notificadas")[0]['c']
     
@@ -139,39 +166,19 @@ def relatorios():
     inf_pneu = query_db("SELECT COUNT(*) as c FROM Infeccoes_Notificadas WHERE tipo_infeccao='Pneumonia'")[0]['c']
     inf_ciru = query_db("SELECT COUNT(*) as c FROM Infeccoes_Notificadas WHERE tipo_infeccao='Ferida Operatória'")[0]['c']
 
-    # Fórmulas complexas (Cruzamentos)
-    # Pacientes únicos com Sepse E Cateter Venoso Central
-    sepse_cateter = query_db("""
-        SELECT COUNT(DISTINCT p.id) as c FROM Pacientes p 
-        JOIN Infeccoes_Notificadas i ON p.id = i.paciente_id 
-        JOIN Procedimentos pr ON p.id = pr.paciente_id 
-        WHERE i.tipo_infeccao='Sepse' AND pr.tipo_procedimento LIKE '%cateter venoso central%'
-    """)[0]['c']
+    sepse_cateter = query_db("SELECT COUNT(DISTINCT p.id) as c FROM Pacientes p JOIN Infeccoes_Notificadas i ON p.id = i.paciente_id JOIN Procedimentos pr ON p.id = pr.paciente_id WHERE i.tipo_infeccao='Sepse' AND pr.tipo_procedimento LIKE '%cateter venoso central%'")[0]['c']
     tot_cateter = query_db("SELECT COUNT(DISTINCT paciente_id) as c FROM Procedimentos WHERE tipo_procedimento LIKE '%cateter venoso central%'")[0]['c']
 
-    # Pacientes com Pneumonia E Respirador/Entubação
-    pneu_resp = query_db("""
-        SELECT COUNT(DISTINCT p.id) as c FROM Pacientes p 
-        JOIN Infeccoes_Notificadas i ON p.id = i.paciente_id 
-        JOIN Procedimentos pr ON p.id = pr.paciente_id 
-        WHERE i.tipo_infeccao='Pneumonia' AND (pr.tipo_procedimento='respiração artificial' OR pr.tipo_procedimento='entubação')
-    """)[0]['c']
+    pneu_resp = query_db("SELECT COUNT(DISTINCT p.id) as c FROM Pacientes p JOIN Infeccoes_Notificadas i ON p.id = i.paciente_id JOIN Procedimentos pr ON p.id = pr.paciente_id WHERE i.tipo_infeccao='Pneumonia' AND (pr.tipo_procedimento='respiração artificial' OR pr.tipo_procedimento='entubação')")[0]['c']
     tot_resp = query_db("SELECT COUNT(DISTINCT paciente_id) as c FROM Procedimentos WHERE tipo_procedimento IN ('respiração artificial', 'entubação')")[0]['c']
 
-    # Pacientes com Trato Urinário E Sonda Vesical
-    uri_sonda = query_db("""
-        SELECT COUNT(DISTINCT p.id) as c FROM Pacientes p 
-        JOIN Infeccoes_Notificadas i ON p.id = i.paciente_id 
-        JOIN Procedimentos pr ON p.id = pr.paciente_id 
-        WHERE i.tipo_infeccao='Trato Urinário' AND pr.tipo_procedimento='sonda vesical'
-    """)[0]['c']
+    uri_sonda = query_db("SELECT COUNT(DISTINCT p.id) as c FROM Pacientes p JOIN Infeccoes_Notificadas i ON p.id = i.paciente_id JOIN Procedimentos pr ON p.id = pr.paciente_id WHERE i.tipo_infeccao='Trato Urinário' AND pr.tipo_procedimento='sonda vesical'")[0]['c']
     tot_sonda = query_db("SELECT COUNT(DISTINCT paciente_id) as c FROM Procedimentos WHERE tipo_procedimento='sonda vesical'")[0]['c']
 
-    # Proteção contra divisão por zero e cálculo (* 100)
     calc = lambda num, den: round((num / den) * 100, 2) if den > 0 else 0
 
     return jsonify({
-        'taxa_geral': round(tot_infec / tot_altas, 4) if tot_altas > 0 else 0, # Geral não é x100 na regra padrão, apenas a razão
+        'taxa_geral': round(tot_infec / tot_altas, 4) if tot_altas > 0 else 0,
         'taxa_urinario': calc(inf_uri, tot_infec),
         'taxa_sepse': calc(inf_sepse, tot_infec),
         'taxa_pneumonia': calc(inf_pneu, tot_infec),
@@ -181,34 +188,9 @@ def relatorios():
         'taxa_sonda_vesical': calc(uri_sonda, tot_sonda)
     })
 
-@app.route('/api/auxiliares', methods=['GET'])
-@login_required
-def get_auxiliares():
-    return jsonify({
-        'setores': query_db("SELECT * FROM Setores"),
-        'usuarios': query_db("SELECT u.nome, u.nivel_acesso, s.nome as setor_nome FROM Usuarios u LEFT JOIN Setores s ON u.setor_id=s.id"),
-        'procedimentos': PROCEDIMENTOS_LISTA
-    })
-
-@app.route('/api/setores', methods=['POST'])
-@login_required
-def add_setor():
-    if session.get('nivel_acesso') != 'admin': return jsonify({'error': 'Acesso negado'}), 403
-    execute_db("INSERT INTO Setores (nome) VALUES (?)", (request.json['nome'],))
-    return jsonify({'ok': True})
-
-@app.route('/api/usuarios', methods=['POST'])
-@login_required
-def add_user():
-    if session.get('nivel_acesso') != 'admin': return jsonify({'error': 'Acesso negado'}), 403
-    d = request.json
-    execute_db("INSERT INTO Usuarios (nome, email, senha, nivel_acesso, setor_id) VALUES (?,?,?,?,?)",
-               (d['nome'], d['email'], generate_password_hash(d['senha']), d['nivel_acesso'], d.get('setor_id')))
-    return jsonify({'ok': True})
-
 try:
     init_db()
-    print("✓ DB Ready")
+    print("✓ Banco de dados online.")
 except Exception as e:
     print(f"Erro DB: {e}")
 
