@@ -15,8 +15,11 @@ app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
 # ---------------------------------------------------------------------------
 # DATABASE SETUP (Turso Cloud Database Adapter)
 # ---------------------------------------------------------------------------
-TURSO_URL = os.environ.get('TURSO_URL', 'libsql://cchi-vitorrastrep.aws-us-east-2.turso.io')
-TURSO_TOKEN = os.environ.get('TURSO_TOKEN', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA')
+TURSO_URL = os.environ.get('libsql://cchi-vitorrastrep.aws-us-east-2.turso.io')
+TURSO_TOKEN = os.environ.get('eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU2MDUxNDMsImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.tpWLgFLeSPFZwn65LYV9pWzwASNdyfgfdOVBUjWc8rW1OZg4_rHMjbgMIETPoKSlen4_-1_UobSY3wDxa2NrDA')
+
+if not TURSO_URL or not TURSO_TOKEN:
+    raise RuntimeError("[CCIH] ERRO CRÍTICO: TURSO_URL e TURSO_TOKEN são obrigatórios! Defina as variáveis de ambiente.")
 
 print(f"[CCIH] Conectando ao banco: {TURSO_URL}")
 
@@ -118,7 +121,8 @@ def init_db():
         conn.close()
         print("[CCIH] Banco Inicializado.")
     except Exception as e:
-        print(f"[CCIH] Erro DB: {e}")
+        print(f"[CCIH] ERRO CRÍTICO no init_db: {e}")
+        raise
 
 
 # ---------------------------------------------------------------------------
