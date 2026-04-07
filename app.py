@@ -17,8 +17,10 @@ app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
 # ---------------------------------------------------------------------------
 TURSO_URL = os.environ.get('TURSO_URL', 'libsql://cchi-vitorrastrep.aws-us-east-2.turso.io')
 TURSO_TOKEN = os.environ.get('TURSO_TOKEN', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA')
-class TursoCursor:
-    def __init__(self, rs=None):
+
+print(f"[CCIH] Conectando ao banco: {TURSO_URL}")
+
+
         if rs:
             self.rows = [dict(zip(rs.columns, row)) for row in rs.rows]
             self.tuples = [tuple(row) for row in rs.rows]
@@ -43,11 +45,14 @@ class TursoCursor:
         return self.rows
 
 class TursoAdapter:
-    def __init__(self):
-        if TURSO_URL.startswith("file:"):
-            self.client = libsql_client.create_client_sync(url=TURSO_URL)
-        else:
-            self.client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
+   =def __init__(self):
+    print(f"[DB] URL={TURSO_URL[:40]}... TOKEN={'sim' if TURSO_TOKEN else 'NÃO'}")
+    if TURSO_URL.startswith("file:"):
+        self.client = libsql_client.create_client_sync(url=TURSO_URL)
+    else:
+        if not TURSO_TOKEN:
+            raise Exception("TURSO_TOKEN não configurado!")
+        self.client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
 
     def cursor(self): return self
 
