@@ -12,7 +12,6 @@ app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
 # ---------------------------------------------------------------------------
 # DATABASE SETUP (Turso Cloud Database Adapter)
 # ---------------------------------------------------------------------------
-# As chaves foram colocadas como fallback para garantir que funciona imediatamente.
 TURSO_URL = os.environ.get('TURSO_DATABASE_URL', 'libsql://cchi-vitorrastrep.aws-us-east-2.turso.io')
 TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU1Njk0NTksImlkIjoiMDE5ZDY4MmYtMDAwMS03N2IxLThhYjQtZmEyMGZlOTg4NTg5IiwicmlkIjoiOWNmYzg2YmEtMGRmOC00YzVhLWI3MTQtYzVmYmMzNGYxYWE1In0.C8J9OK0Q3hcWTDdmQIs1EDFnnjVoYlA5rM7npQ7B-coRuOTOI7HWCOnKhQkzd1cNCcrE0uzmjidIfuXbhL84DA')
 
@@ -30,7 +29,6 @@ class TursoCursor:
     def fetchone(self):
         if not self.rows:
             return None
-        # Esta classe permite que o código antigo use row['nome'] ou row[0] sem dar erro
         class RowDict(dict):
             def __init__(self, d, t):
                 super().__init__(d)
@@ -63,7 +61,7 @@ class TursoAdapter:
             self.client.batch(statements)
 
     def commit(self):
-        pass # O Turso faz auto-commit na API
+        pass
 
     def close(self):
         self.client.close()
@@ -138,19 +136,15 @@ def init_db():
         );
         """)
 
-        # Seed motivos de saída
         motivos = ['Alta Médica', 'Óbito', 'Transferência para outro hospital']
         for m in motivos:
             c.execute("INSERT OR IGNORE INTO motivos_saida(nome) VALUES(?)", (m,))
 
-        # Seed setor padrão
         c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('UTI Geral')")
         c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Cirúrgica')")
         c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Médica')")
 
-        # Seed admin padrão
         admin_hash = hash_password('admin123')
-        # Verifica se o admin já existe
         admin_check = c.execute("SELECT * FROM usuarios WHERE email='admin@ccih.com'").fetchone()
         if not admin_check:
             c.execute("""
@@ -213,9 +207,7 @@ def login():
         return jsonify({'error': 'Campos obrigatórios'}), 400
 
     conn = get_db()
-    user = row_to_dict(conn.execute(
-        "SELECT * FROM usuarios WHERE email=?", (email,)
-    ).fetchone())
+    user = row_to_dict(conn.execute("SELECT * FROM usuarios WHERE email=?", (email,)).fetchone())
     conn.close()
 
     if not user or user['senha'] != hash_password(senha):
@@ -366,7 +358,7 @@ def delete_usuario(uid):
 
 
 # ---------------------------------------------------------------------------
-# ROUTES — PACIENTES
+# ROUTES — PACIENTES (CORREÇÕES APLICADAS)
 # ---------------------------------------------------------------------------
 @app.route('/api/pacientes', methods=['GET'])
 @login_required
@@ -390,7 +382,6 @@ def get_pacientes():
             base_query + " WHERE p.status='internado' ORDER BY p.setor_nome, p.nome"
         ).fetchall())
 
-    # CORREÇÃO: Anexar os procedimentos e infeções para o JavaScript não falhar
     for p in rows:
         p['procedimentos'] = rows_to_list(conn.execute(
             "SELECT * FROM procedimentos WHERE paciente_id=? AND status='ativo'", (p['id'],)
@@ -416,7 +407,6 @@ def create_paciente():
     if not nome:
         return jsonify({'error': 'Nome obrigatório'}), 400
 
-    # CORREÇÃO: Converter campos em branco para NULL para não gerar Erro 500
     setor_id = data.get('setor_id')
     if not setor_id or str(setor_id).strip() == '':
         setor_id = None
@@ -511,7 +501,6 @@ def dar_alta(pid):
         "UPDATE pacientes SET status='alta', motivo_saida_id=? WHERE id=?",
         (motivo_id, pid)
     )
-    # Remover procedimentos ativos
     conn.execute(
         "UPDATE procedimentos SET status='removido', data_remocao=date('now') WHERE paciente_id=? AND status='ativo'",
         (pid,)
@@ -594,7 +583,6 @@ def remover_procedimento(proc_id):
 # ROUTES — INFECÇÕES
 # ---------------------------------------------------------------------------
 TIPOS_INFECCAO = ['Trato Urinário', 'Sepse', 'Pneumonia', 'Ferida Operatória', 'Outra']
-
 
 @app.route('/api/pacientes/<int:pid>/infeccoes', methods=['POST'])
 @login_required
