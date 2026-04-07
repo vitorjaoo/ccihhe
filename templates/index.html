@@ -1,134 +1,157 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>CCIH · Sistema de Rastreio</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCIH · Controle Hospitalar</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
 <script>
-  // PONTE FLASK -> JS: Isso resolve o problema do Admin não ser reconhecido
-  window.USER_DATA = {
-    nivel: "{{ nivel }}",
-    nome: "{{ user }}",
-    setorId: "{{ setor_id }}"
-  };
+  window.USER = { nivel: "{{ nivel }}", nome: "{{ user }}", setorId: "{{ setor_id }}" };
 </script>
 <style>
-  :root { --c-primary: #0d9488; --c-bg: #f0fdfa; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--c-bg); }
-  .card { background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(13,148,136,0.08); border: 1px solid #e8f5f3; }
-  .inp { width: 100%; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: .75rem; background: #f8fafc; }
-  .btn { padding: .75rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-  .btn-primary { background: var(--c-primary); color: white; }
-  .hidden { display: none; }
-  .badge { padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
-  .badge-red { background: #fef2f2; color: #ef4444; }
-  .badge-green { background: #f0fdf4; color: #16a34a; }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  body { font-family: 'DM Sans', sans-serif; background: #f0fdfa; color: #1e293b; }
+  .card { background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(13,148,136,0.08); padding: 1.5rem; }
+  .inp { width: 100%; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 0.75rem 1rem; outline: none; background: #f8fafc; transition: 0.2s; }
+  .inp:focus { border-color: #0d9488; }
+  .btn { padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: bold; cursor: pointer; text-align: center; }
+  .btn-primary { background: #0d9488; color: white; }
+  .btn-danger { background: #ef4444; color: white; }
+  .badge { padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.75rem; font-weight: bold; }
+  .toggle { position: relative; width: 44px; height: 24px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 24px; transition: .2s; }
+  .toggle-slider:before { content:""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .2s; }
+  .toggle input:checked + .toggle-slider { background: #0d9488; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+  .modal.active { display: flex; }
 </style>
 </head>
 <body>
 
-<div id="page-login" class="{% if page != 'login' %}hidden{% endif %} min-h-screen flex items-center justify-center p-4" style="background: #0d9488;">
-  <div class="card p-8 w-full max-w-sm text-center">
-    <h1 class="text-2xl font-bold mb-6">Acesso CCIH</h1>
-    <div id="login-error" class="hidden mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm"></div>
-    <input id="login-email" type="email" class="inp mb-4" placeholder="Email (admin@ccih.com)"/>
-    <input id="login-senha" type="password" class="inp mb-6" placeholder="Senha (admin123)"/>
-    <button onclick="doLogin()" class="btn btn-primary w-full">Entrar</button>
+<div id="view-login" class="{% if page != 'login' %}hidden{% endif %} min-h-screen flex items-center justify-center p-4 bg-teal-700">
+  <div class="card w-full max-w-sm text-center">
+    <h1 class="text-2xl font-bold text-teal-800 mb-6">Acesso CCIH</h1>
+    <input id="log-email" type="email" class="inp mb-3" placeholder="Email"/>
+    <input id="log-senha" type="password" class="inp mb-5" placeholder="Senha"/>
+    <button onclick="fazerLogin()" class="btn btn-primary w-full">Entrar no Sistema</button>
   </div>
 </div>
 
-<div id="page-app" class="{% if page != 'app' %}hidden{% endif %} min-h-screen">
-  <nav class="bg-white border-b p-4 sticky top-0 z-40">
-    <div class="max-w-5xl mx-auto flex justify-between items-center">
-      <h2 class="font-bold text-teal-700 text-xl">CCIH Dashboard</h2>
-      <div class="flex items-center gap-4">
-        <span class="text-sm font-medium" id="nav-info"></span>
-        <button onclick="doLogout()" class="text-red-500 text-sm font-bold">Sair</button>
-      </div>
+<div id="view-app" class="{% if page != 'app' %}hidden{% endif %} min-h-screen pb-20">
+  <nav class="bg-white p-4 shadow-sm sticky top-0 z-40 flex justify-between items-center">
+    <h2 class="font-bold text-teal-700 text-lg">CCIH Hospitalar</h2>
+    <div class="flex items-center gap-4 text-sm font-medium">
+      <span id="nav-user"></span>
+      <button onclick="sair()" class="text-red-500 font-bold">Sair</button>
     </div>
   </nav>
 
-  <main class="max-w-5xl mx-auto p-4">
-    
-    <div id="view-admin" class="hidden space-y-6">
-      <div class="grid grid-cols-3 gap-4">
-        <div class="card p-6 text-center"><p class="text-sm text-slate-500">Pacientes</p><h3 id="dash-pacientes" class="text-3xl font-bold">0</h3></div>
-        <div class="card p-6 text-center"><p class="text-sm text-slate-500">Procedimentos</p><h3 id="dash-proc" class="text-3xl font-bold text-teal-600">0</h3></div>
-        <div class="card p-6 text-center"><p class="text-sm text-slate-500">Alertas</p><h3 id="dash-transf" class="text-3xl font-bold text-red-500">0</h3></div>
-      </div>
+  <main class="max-w-4xl mx-auto p-4 space-y-6 mt-4">
+    <div class="flex gap-2 overflow-x-auto border-b pb-2">
+      <button onclick="mudarAba('dashboard')" class="aba-btn font-bold text-slate-400 pb-2 px-2" id="btn-dashboard">Visão Global / Relatórios</button>
+      <button onclick="mudarAba('pacientes')" class="aba-btn font-bold text-slate-400 pb-2 px-2" id="btn-pacientes">Meus Pacientes</button>
+    </div>
 
-      <div class="card p-6">
-        <h3 class="font-bold mb-4">Monitoramento Global de Pacientes</h3>
-        <div id="lista-admin-pacientes" class="space-y-3"></div>
-      </div>
-
-      <div class="grid md:grid-cols-2 gap-6">
-        <div class="card p-6">
-          <div class="flex justify-between mb-4"><h3 class="font-bold">Estagiários / Usuários</h3><button onclick="openModal('modal-usuario')" class="text-teal-600 text-sm font-bold">+ Cadastrar</button></div>
-          <div id="lista-usuarios" class="space-y-2"></div>
+    <div id="aba-dashboard" class="aba-conteudo hidden space-y-6">
+      <h3 class="font-bold text-xl text-slate-800">Taxas e Índices (Mês Atual)</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="cards-relatorio">
         </div>
-        <div class="card p-6">
-          <div class="flex justify-between mb-4"><h3 class="font-bold">Setores</h3><button onclick="openModal('modal-setor')" class="text-teal-600 text-sm font-bold">+ Novo Setor</button></div>
-          <div id="lista-setores" class="space-y-2"></div>
+      
+      <div class="write-only mt-6 card">
+        <h3 class="font-bold mb-4">Gestão do Sistema</h3>
+        <div class="flex flex-wrap gap-4">
+          <button onclick="document.getElementById('mod-user').classList.add('active')" class="btn btn-primary text-sm">Novo Usuário</button>
+          <button onclick="document.getElementById('mod-setor').classList.add('active')" class="btn btn-primary text-sm">Novo Setor</button>
         </div>
       </div>
     </div>
 
-    <div id="view-estagiario" class="hidden">
-      <div class="flex gap-4 mb-6 border-b pb-2">
-        <button onclick="showTab('pacientes')" class="font-bold text-teal-600">Pacientes</button>
-        <button onclick="showTab('cadastro')" class="text-slate-500">Novo Cadastro</button>
+    <div id="aba-pacientes" class="aba-conteudo hidden space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-xl text-slate-800">Pacientes Internados</h3>
+        <button onclick="document.getElementById('mod-paciente').classList.add('active')" class="btn btn-primary text-sm write-only">+ Cadastrar</button>
       </div>
+      <div id="lista-pacientes" class="space-y-3"></div>
+    </div>
 
-      <div id="tab-pacientes" class="tab-content">
-        <div id="lista-pacientes" class="space-y-3"></div>
-      </div>
-
-      <div id="tab-cadastro" class="tab-content hidden card p-6">
-        <h3 class="font-bold mb-4">Registrar Novo Paciente</h3>
-        <div class="space-y-4">
-          <input id="cad-nome" class="inp" placeholder="Nome Completo"/>
-          <div class="grid grid-cols-2 gap-4">
-            <input id="cad-idade" type="number" class="inp" placeholder="Idade"/>
-            <input id="cad-leito" class="inp" placeholder="Leito (Ex: 101-A)"/>
-          </div>
-          <div id="admin-only-sector" class="hidden">
-            <label class="text-xs font-bold text-slate-500">Escolha o Setor</label>
-            <select id="cad-setor-id" class="inp"></select>
-          </div>
-          <button onclick="cadastrarPaciente()" class="btn btn-primary w-full">Finalizar Cadastro</button>
+    <div id="tela-paciente" class="hidden space-y-4">
+      <button onclick="mudarAba('pacientes')" class="text-teal-600 font-bold text-sm mb-2">← Voltar para lista</button>
+      <div class="card bg-teal-50 border-teal-100 flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-teal-900" id="det-nome"></h2>
+          <p class="text-teal-700 text-sm mt-1" id="det-info"></p>
         </div>
+        <button onclick="document.getElementById('mod-alta').classList.add('active')" class="btn btn-danger text-sm write-only">Dar Alta</button>
+      </div>
+
+      <div class="card space-y-4 write-only">
+        <h3 class="font-bold">Notificar Infecção (CCIH)</h3>
+        <div class="flex gap-2">
+          <select id="inf-tipo" class="inp">
+            <option value="Trato Urinário">Trato Urinário</option>
+            <option value="Sepse">Sangue/Sepse</option>
+            <option value="Pneumonia">Pneumonia</option>
+            <option value="Ferida Operatória">Cirúrgica / Ferida Operatória</option>
+            <option value="Outra">Outra</option>
+          </select>
+          <button onclick="salvarInfeccao()" class="btn btn-primary">Notificar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="font-bold mb-4">Procedimentos Invasivos</h3>
+        <div id="lista-procedimentos" class="space-y-3"></div>
       </div>
     </div>
   </main>
 </div>
 
-<div id="modal-usuario" class="modal-overlay hidden">
-  <div class="bg-white p-6 rounded-2xl w-full max-w-md">
-    <h3 class="font-bold mb-4 text-xl">Novo Integrante da Equipe</h3>
-    <div class="space-y-4">
-      <input id="m-usr-nome" class="inp" placeholder="Nome Completo"/>
-      <input id="m-usr-email" type="email" class="inp" placeholder="Email de acesso"/>
-      <select id="m-usr-nivel" class="inp" onchange="document.getElementById('m-setor-field').classList.toggle('hidden', this.value==='admin')">
-        <option value="estagiario">Estagiário</option>
-        <option value="admin">Administrador</option>
-      </select>
-      <div id="m-setor-field">
-        <select id="m-usr-setor" class="inp"></select>
-      </div>
-      <input id="m-usr-senha" type="password" class="inp" placeholder="Senha Provisória"/>
-      <div class="flex gap-2">
-        <button onclick="closeModal('modal-usuario')" class="btn bg-slate-100 flex-1">Cancelar</button>
-        <button onclick="criarUsuario()" class="btn btn-primary flex-1">Salvar</button>
-      </div>
-    </div>
+<div id="mod-alta" class="modal">
+  <div class="card w-full max-w-sm">
+    <h3 class="font-bold mb-4">Finalizar Internação</h3>
+    <select id="alta-motivo" class="inp mb-4">
+      <option value="Alta Médica">Alta Médica</option>
+      <option value="Óbito">Óbito</option>
+      <option value="Transferência">Transferência para outro hospital</option>
+    </select>
+    <div class="flex gap-2"><button onclick="document.getElementById('mod-alta').classList.remove('active')" class="btn bg-slate-200 flex-1 text-slate-700">Cancelar</button><button onclick="salvarAlta()" class="btn btn-danger flex-1">Confirmar Saída</button></div>
   </div>
 </div>
 
-<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white font-bold shadow-lg z-50"></div>
+<div id="mod-paciente" class="modal">
+  <div class="card w-full max-w-sm space-y-3">
+    <h3 class="font-bold mb-2">Novo Paciente</h3>
+    <input id="cad-p-nome" class="inp" placeholder="Nome Completo"/>
+    <div class="grid grid-cols-2 gap-2"><input id="cad-p-idade" type="number" class="inp" placeholder="Idade"/><input id="cad-p-leito" class="inp" placeholder="Leito"/></div>
+    <select id="cad-p-setor" class="inp hidden"></select>
+    <div class="flex gap-2 mt-4"><button onclick="document.getElementById('mod-paciente').classList.remove('active')" class="btn bg-slate-200 flex-1 text-slate-700">Cancelar</button><button onclick="salvarPaciente()" class="btn btn-primary flex-1">Salvar</button></div>
+  </div>
+</div>
+
+<div id="mod-user" class="modal">
+  <div class="card w-full max-w-sm space-y-3">
+    <h3 class="font-bold mb-2">Novo Membro</h3>
+    <input id="cad-u-nome" class="inp" placeholder="Nome"/>
+    <input id="cad-u-email" type="email" class="inp" placeholder="Email"/>
+    <select id="cad-u-nivel" class="inp" onchange="document.getElementById('cad-u-setor').classList.toggle('hidden', this.value !== 'estagiario')">
+      <option value="estagiario">Estagiário (Alocado em Setor)</option><option value="espectador">Espectador (Professora - Leitura)</option><option value="admin">Administrador (Controle Total)</option>
+    </select>
+    <select id="cad-u-setor" class="inp"></select>
+    <input id="cad-u-senha" type="password" class="inp" placeholder="Senha Provisória"/>
+    <div class="flex gap-2 mt-4"><button onclick="document.getElementById('mod-user').classList.remove('active')" class="btn bg-slate-200 flex-1 text-slate-700">Cancelar</button><button onclick="salvarUser()" class="btn btn-primary flex-1">Criar</button></div>
+  </div>
+</div>
+
+<div id="mod-setor" class="modal">
+  <div class="card w-full max-w-sm">
+    <h3 class="font-bold mb-4">Nova Ala/Setor</h3>
+    <input id="cad-s-nome" class="inp mb-4" placeholder="Nome do Setor"/>
+    <div class="flex gap-2"><button onclick="document.getElementById('mod-setor').classList.remove('active')" class="btn bg-slate-200 flex-1 text-slate-700">Cancelar</button><button onclick="salvarSetor()" class="btn btn-primary flex-1">Criar</button></div>
+  </div>
+</div>
+
+<div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-teal-800 text-white px-6 py-2 rounded-full font-bold shadow-lg z-50"></div>
 
 <script src="/static/script.js"></script>
 </body>
