@@ -588,9 +588,9 @@ const App = {
       const c = document.getElementById('lista-setores');
       if (c) {
         c.innerHTML = data.map(s => `
-          <div class="card" style="padding:15px;display:flex;justify-content:space-between">
-            <span style="font-weight:600">${s.nome}</span>
-            <span class="badge badge-gray">ID: ${s.id}</span>
+          <div class="setor-item">
+            <span class="setor-item-name">${s.nome}</span>
+            <span class="setor-item-id">ID: ${s.id}</span>
           </div>
         `).join('');
       }
@@ -626,10 +626,10 @@ const App = {
     try {
       const data = await api('GET', '/api/usuarios');
       document.getElementById('lista-usuarios').innerHTML = data.map(u => `
-        <div class="card" style="padding:15px;display:flex;justify-content:space-between;align-items:center">
+        <div class="user-item">
           <div>
-            <div style="font-weight:600">${u.nome}</div>
-            <div style="font-size:12px;color:var(--slate-500)">${u.email}</div>
+            <div class="user-item-name">${u.nome}</div>
+            <div class="user-item-email">${u.email}</div>
           </div>
           <span class="badge badge-blue">${u.nivel_acesso}</span>
         </div>
