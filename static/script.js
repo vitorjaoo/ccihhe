@@ -176,9 +176,12 @@ const App = {
     try {
       const todos = await api('GET', '/api/pacientes');
       
-      let filterArr = todos.filter(p => p.status === State.pacFilter);
+      let filterArr = todos.filter(p => p.status === State.pacFilter && !p.setor_id_destino);
       // NOVO: Ordenação Natural de Leitos
       filterArr.sort((a, b) => (a.leito || '').localeCompare(b.leito || '', undefined, { numeric: true, sensitivity: 'base' }));
+
+      const pendentes = todos.filter(p => p.setor_id_destino == State.user.setor_id);
+      this.renderTransferencias(pendentes);
       
       State.pacientes = filterArr;
       
@@ -260,7 +263,63 @@ const App = {
     } catch (e) { toast(e.message, 'error'); }
   },
 
-  /* ─── EDIÇÃO DE PACIENTE ───────────────────────────── */
+  // --- NOVAS FUNCOES ---
+  renderTransferencias(lista) {
+    const div = document.getElementById('sessao-transferencia');
+    const cont = document.getElementById('lista-transferencia');
+    if (!div || !cont) return;
+    if (lista.length === 0) { div.style.display = 'none'; return; }
+    
+    div.style.display = 'block';
+    cont.innerHTML = lista.map(p => `
+      <div class="card" style="padding:12px; display:flex; justify-content:space-between; align-items:center">
+        <span style="font-size:14px"><b>${p.nome}</b> (Leito: ${p.leito})</span>
+        <button class="btn btn-sm btn-primary write-only" onclick="App.confirmarRecebimento(${p.id})">Confirmar Entrada</button>
+      </div>
+    `).join('');
+  },
+
+  async confirmarRecebimento(pid) {
+    if(!confirm('Confirma a chegada do paciente neste setor?')) return;
+    try {
+      await api('POST', `/api/pacientes/${pid}/receber`);
+      toast('Paciente recebido!');
+      this.loadPacientes();
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
+  openModalTransferencia() {
+    const sel = document.getElementById('transf-setor');
+    const p = State.currentPacienteData;
+    sel.innerHTML = '<option value="">Escolha o destino...</option>' + 
+      State.setores.filter(s => s.id != p.setor_id_atual)
+      .map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+    
+    closeModal('modal-detalhes');
+    showModal('modal-transferencia');
+  },
+
+  async confirmarTransferencia() {
+    const dest = document.getElementById('transf-setor').value;
+    if(!dest) return toast('Selecione um setor', 'error');
+    try {
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/transferir`, { setor_id_destino: dest });
+      toast('Transferência solicitada!');
+      closeModal('modal-transferencia');
+      this.loadPacientes();
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
+  async deletarPaciente() {
+    if (!confirm('ATENÇÃO: Tem certeza que deseja apagar este paciente e TODO o seu histórico? Esta ação não pode ser desfeita.')) return;
+    try {
+      await api('DELETE', `/api/pacientes/${State.currentPacienteId}`);
+      toast('Paciente apagado com sucesso!');
+      closeModal('modal-detalhes');
+      this.loadPacientes();
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
   openEditPaciente(pid) {
     const p = State.pacientes.find(x => x.id === pid);
     if (!p) return;
@@ -322,6 +381,11 @@ const App = {
     `;
 
     document.getElementById('btn-alta-paciente').style.display = (p.status === 'internado') ? 'inline-flex' : 'none';
+
+    const btnDel = document.getElementById('btn-delete-paciente');
+    if (btnDel) {
+      btnDel.style.display = (State.user.nivel_acesso === 'admin') ? 'inline-flex' : 'none';
+    }
 
     this.renderProcedimentos(data.procedimentos);
     this.renderInfeccoes(data.infeccoes);
