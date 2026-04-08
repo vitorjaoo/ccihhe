@@ -15,8 +15,8 @@ app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
 # ---------------------------------------------------------------------------
 # DATABASE SETUP (Turso Cloud Database Adapter)
 # ---------------------------------------------------------------------------
-TURSO_URL = os.environ.get('TURSO_URL', 'https://ccih-vitorrastrep.aws-us-east-2.turso.io')
-TURSO_TOKEN = os.environ.get('TURSO_TOKEN', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU2MDcxNTMsImlkIjoiMDE5ZDZhNmUtZTkwMS03YWQ5LTg2YjAtMWJhZWVmYjI1YWFkIiwicmlkIjoiYTlmZTQwZWItYzg1NS00NDRkLWFlMjktZGQzNjkwNzI0ODc0In0.jE7aM-fJc6osLvJ6RWCoSL2AyUY5aBq4wnBbTzK4TEKO6RWNxA958nsD21syq0ur1UPAosI56-0c-3igAdArDw')
+TURSO_URL = os.environ.get('TURSO_URL', 'libsql://ccih-vitorrastrep.aws-us-east-2.turso.io')
+TURSO_TOKEN = os.environ.get('TURSO_TOKEN', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU2ODUwNTYsImlkIjoiMDE5ZDZhNmUtZTkwMS03YWQ5LTg2YjAtMWJhZWVmYjI1YWFkIiwicmlkIjoiYTlmZTQwZWItYzg1NS00NDRkLWFlMjktZGQzNjkwNzI0ODc0In0.FwEon_QmTAxqSL0RrIUnt6dD4NaT4MONuA4ezgf2i0UcN4s1PJchDobiUyinb_GzFD1-9rQGmRl6B0QMMeRxDQ')
 print(f"[CCIH] Conectando ao banco: {TURSO_URL}")
 
 
