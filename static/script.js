@@ -1,23 +1,59 @@
 /* =========================================================
-   CCIH — Sistema de Rastreio de Infecção Hospitalar
-   script.js — SPA Controller
+   CCIH — Sistema de Rastreio de Infecção Hospitalar · UFAL
+   script.js — SPA Controller v3.0
+   =========================================================
+   Endpoints alinhados com app.py (app__1_.py):
+   GET    /api/auth/me
+   POST   /api/auth/login
+   POST   /api/auth/logout
+   PUT    /api/auth/senha
+   GET    /api/setores
+   POST   /api/setores
+   DELETE /api/setores/:id
+   GET    /api/usuarios
+   POST   /api/usuarios
+   DELETE /api/usuarios/:id
+   GET    /api/pacientes
+   POST   /api/pacientes
+   GET    /api/pacientes/:id
+   PUT    /api/pacientes/:id
+   DELETE /api/pacientes/:id
+   POST   /api/pacientes/:id/alta
+   POST   /api/pacientes/:id/transferir
+   POST   /api/pacientes/:id/receber
+   POST   /api/pacientes/:id/registros
+   POST   /api/pacientes/:id/procedimentos
+   POST   /api/procedimentos/:id/remover
+   POST   /api/pacientes/:id/infeccoes
+   GET    /api/motivos_saida
+   GET    /api/dashboard/relatorios?mes=YYYY-MM
    ========================================================= */
 
+'use strict';
+
+/* ─── CONSTANTS ─────────────────────────────────────────── */
 const NIVEL_LABELS = {
-  admin: '🔑 Administrador',
-  estagiario: '🩺 Estagiário',
-  espectador: '👁 Espectador',
+  admin:      'Administrador',
+  estagiario: 'Estagiário',
+  espectador: 'Espectador',
 };
 
 const INF_COLORS = {
-  'Trato Urinário': '#3b82f6',
-  'Sepse': '#ef4444',
-  'Pneumonia': '#f59e0b',
-  'Ferida Operatória': '#8b5cf6',
-  'Outra': '#64748b',
+  'Trato Urinario':   '#2563EB',
+  'Sepse':            '#DC2626',
+  'Pneumonia':        '#D97706',
+  'Ferida Operatoria':'#7C3AED',
+  'Outra':            '#64748B',
 };
 
-/* ─── STATE ─────────────────────────────────────────── */
+const VIEW_META = {
+  dashboard: { title: 'Painel de Controle',   sub: 'Relatórios e métricas do período' },
+  pacientes:  { title: 'Gestão de Pacientes',  sub: 'Internações e acompanhamento clínico' },
+  setores:    { title: 'Setores e Alas',       sub: 'Gestão de unidades hospitalares' },
+  usuarios:   { title: 'Usuários do Sistema',  sub: 'Controle de acesso e permissões' },
+};
+
+/* ─── STATE ─────────────────────────────────────────────── */
 const State = {
   user: null,
   pacientes: [],
@@ -26,21 +62,20 @@ const State = {
   currentView: 'dashboard',
   currentPacienteId: null,
   currentPacienteData: null,
-  editingPacienteId: null, // Novo estado para Edição
+  editingPacienteId: null,
   pacFilter: 'internado',
   pendingProcId: null,
   pendingAltaPacId: null,
 };
 
-/* ─── UTILS ─────────────────────────────────────────── */
-function today() { return new Date().toISOString().split('T')[0]; }
+/* ─── UTILS ─────────────────────────────────────────────── */
+function today()        { return new Date().toISOString().split('T')[0]; }
 function currentMonth() { return new Date().toISOString().slice(0, 7); }
 
-function diffDias(dataStr) {
-  if (!dataStr) return null;
-  const d = new Date(dataStr + 'T00:00:00');
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
+function diffDias(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + 'T00:00:00');
+  const now = new Date(); now.setHours(0, 0, 0, 0);
   return Math.floor((now - d) / 86400000);
 }
 
@@ -55,37 +90,55 @@ function diasBadge(dias) {
   let cls = 'dias-ok';
   if (dias >= 7 && dias < 14) cls = 'dias-warn';
   if (dias >= 14) cls = 'dias-danger';
-  return `<span class="dias-badge ${cls}">⏱ ${dias}d</span>`;
+  const icon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  return `<span class="dias-badge ${cls}">${icon} ${dias}d</span>`;
+}
+
+function initials(nome) {
+  if (!nome) return '?';
+  return nome.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase();
 }
 
 function toast(msg, type = 'success') {
+  const icons = {
+    success: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    error:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    info:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+  };
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
-  el.textContent = msg;
+  el.innerHTML = (icons[type] || '') + msg;
   document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+  setTimeout(() => el.remove(), 3800);
 }
 
-function showModal(id) { document.getElementById(id).classList.add('show'); }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-
-/* ─── API ────────────────────────────────────────────── */
+/* ─── API ────────────────────────────────────────────────── */
 async function api(method, path, body = null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = { method, headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(path, opts);
+  if (res.status === 204) return {};
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Erro no servidor');
+  if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
   return data;
 }
 
-/* ─── AUTH & APP ─────────────────────────────────────── */
+/* ─── MODAL HELPERS ──────────────────────────────────────── */
 const App = {
+  openModal(id)  { document.getElementById(id)?.classList.add('show'); },
+  closeModal(id) { document.getElementById(id)?.classList.remove('show'); },
+
+  /* ─── AUTH ─────────────────────────────────────────────── */
   async login() {
     const email = document.getElementById('login-email').value.trim();
     const senha = document.getElementById('login-senha').value;
     const errEl = document.getElementById('login-error');
     errEl.style.display = 'none';
+    if (!email || !senha) {
+      errEl.textContent = 'Preencha o e-mail e a senha.';
+      errEl.style.display = 'block';
+      return;
+    }
     try {
       const user = await api('POST', '/api/auth/login', { email, senha });
       State.user = user;
@@ -97,7 +150,7 @@ const App = {
   },
 
   async logout() {
-    await api('POST', '/api/auth/logout');
+    try { await api('POST', '/api/auth/logout'); } catch {}
     State.user = null;
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app-screen').style.display = 'none';
@@ -107,8 +160,7 @@ const App = {
 
   async checkSession() {
     try {
-      const user = await api('GET', '/api/auth/me');
-      State.user = user;
+      State.user = await api('GET', '/api/auth/me');
       this.initApp();
     } catch {
       document.getElementById('login-screen').style.display = 'flex';
@@ -117,11 +169,12 @@ const App = {
 
   async initApp() {
     document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('app-screen').style.display = 'flex';
 
     const u = State.user;
     document.getElementById('nav-user-nome').textContent = u.nome;
     document.getElementById('nav-user-nivel').textContent = NIVEL_LABELS[u.nivel_acesso] || u.nivel_acesso;
+    document.getElementById('nav-user-avatar').textContent = initials(u.nome);
 
     if (u.nivel_acesso === 'admin') {
       document.getElementById('nav-admin-group').style.display = 'block';
@@ -133,64 +186,73 @@ const App = {
       document.querySelectorAll('.write-only').forEach(el => el.style.display = 'none');
     }
 
-    if (u.nivel_acesso === 'estagiario' && u.setor_id) {
-      document.getElementById('topbar-setor').style.display = 'block';
-    }
-
     document.getElementById('filtro-mes').value = currentMonth();
-    document.getElementById('reg-data').value = today();
-    document.getElementById('inf-data').value = today();
 
     await this.loadSetores();
     await this.loadMotivos();
     this.navigate('dashboard');
   },
 
-  /* ─── NAVIGATION ───────────────────────────────────── */
+  /* ─── NAVIGATION ─────────────────────────────────────── */
   navigate(view) {
     State.currentView = view;
+
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     const link = document.getElementById(`nav-${view}`);
     if (link) link.classList.add('active');
 
-    ['view-dashboard', 'view-pacientes', 'view-setores', 'view-usuarios'].forEach(v => {
-      document.getElementById(v).style.display = (v === `view-${view}`) ? 'block' : 'none';
-    });
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const vEl = document.getElementById(`view-${view}`);
+    if (vEl) vEl.classList.add('active');
+
+    const meta = VIEW_META[view] || { title: view, sub: '' };
+    document.getElementById('topbar-title').textContent = meta.title;
+    document.getElementById('topbar-subtitle').textContent = meta.sub;
 
     if (window.innerWidth < 1024) this.toggleMenu(false);
 
-    if (view === 'pacientes') this.loadPacientes();
-    if (view === 'dashboard') this.loadDashboard();
-    if (view === 'setores') this.loadSetores();
-    if (view === 'usuarios') this.loadUsuarios();
+    if (view === 'pacientes')  this.loadPacientes();
+    if (view === 'dashboard')  this.loadDashboard();
+    if (view === 'setores')    this.loadSetores();
+    if (view === 'usuarios')   this.loadUsuarios();
   },
 
   toggleMenu(force) {
     const sb = document.getElementById('sidebar');
-    if (force !== undefined) sb.classList.toggle('open', force);
-    else sb.classList.toggle('open');
+    const ov = document.getElementById('mobile-overlay');
+    if (force !== undefined) {
+      sb.classList.toggle('open', force);
+      ov.classList.toggle('show', force);
+    } else {
+      const open = sb.classList.toggle('open');
+      ov.classList.toggle('show', open);
+    }
   },
 
-  /* ─── PACIENTES ────────────────────────────────────── */
+  /* ─── PACIENTES ─────────────────────────────────────── */
   async loadPacientes() {
+    const grid = document.getElementById('lista-pacientes');
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><p>Carregando pacientes...</p></div>`;
     try {
       const todos = await api('GET', '/api/pacientes');
-      
-      let filterArr = todos.filter(p => p.status === State.pacFilter && !p.setor_id_destino);
-      // NOVO: Ordenação Natural de Leitos
-      filterArr.sort((a, b) => (a.leito || '').localeCompare(b.leito || '', undefined, { numeric: true, sensitivity: 'base' }));
 
-      const pendentes = todos.filter(p => p.setor_id_destino == State.user.setor_id);
+      // Pacientes pendentes de recebimento neste setor
+      const pendentes = todos.filter(p => p.setor_id_destino === State.user.setor_id);
       this.renderTransferencias(pendentes);
-      
-      State.pacientes = filterArr;
-      
+
+      // Filtro por status, excluindo os em trânsito para este setor
+      let lista = todos.filter(p => p.status === State.pacFilter && !p.setor_id_destino);
+      lista.sort((a, b) => (a.leito || '').localeCompare(b.leito || '', undefined, { numeric: true, sensitivity: 'base' }));
+
+      State.pacientes = lista;
+
       document.getElementById('tab-internados').classList.toggle('active', State.pacFilter === 'internado');
       document.getElementById('tab-altas').classList.toggle('active', State.pacFilter === 'alta');
 
       this.renderPacientes();
     } catch (e) {
       toast('Erro ao carregar pacientes', 'error');
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><p>Não foi possível carregar os dados.</p></div>`;
     }
   },
 
@@ -200,248 +262,310 @@ const App = {
   },
 
   renderPacientes() {
-    const c = document.getElementById('lista-pacientes');
-    if (State.pacientes.length === 0) {
-      c.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--slate-500)">Nenhum paciente encontrado.</div>`;
+    const grid = document.getElementById('lista-pacientes');
+    if (!State.pacientes.length) {
+      const msg = State.pacFilter === 'internado' ? 'Nenhum paciente internado.' : 'Nenhuma alta registrada.';
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <h3>${msg}</h3>
+          <p>Os pacientes cadastrados aparecerão aqui.</p>
+        </div>`;
       return;
     }
-    c.innerHTML = State.pacientes.map(p => {
+
+    grid.innerHTML = State.pacientes.map(p => {
       const diff = diffDias(p.data_internacao);
-      const badge = (p.status === 'internado') ? diasBadge(diff) : `<span class="badge badge-gray">Alta</span>`;
-      const diasTexto = diff !== null ? `${diff} dias` : '?';
+      const procs = p.procedimentos || [];
+      const infs  = p.infeccoes || [];
+      const alertas = [];
+      if (infs.length > 0)  alertas.push(`<span class="badge badge-red">${infs.length} infecção${infs.length>1?'es':''}</span>`);
+      if (procs.length > 0) alertas.push(`<span class="badge badge-navy">${procs.length} dispositivo${procs.length>1?'s':''}</span>`);
+      if (diff !== null && diff >= 14) alertas.push(`<span class="badge badge-amber">Longa internação</span>`);
+
+      const canEdit = State.user.nivel_acesso !== 'espectador';
 
       return `
-      <div class="card" style="padding:20px;display:flex;flex-direction:column">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span class="badge badge-gray">${p.setor_nome || '—'}</span>
-          <span class="badge badge-blue" style="font-size:13px">${p.leito}</span>
+      <div class="card card-hover pac-card">
+        <div class="pac-card-head">
+          <span class="pac-card-leito">Leito ${p.leito || '—'}</span>
+          ${p.status === 'internado' ? diasBadge(diff) : '<span class="badge badge-gray">Alta</span>'}
         </div>
-        <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">${p.nome}</h3>
-        ${p.status === 'internado' ? `<div style="margin-bottom:12px">${badge}</div>` : ''}
-        
-        <div style="font-size:13px;color:var(--slate-500);margin-bottom:16px;line-height:1.6">
-          <div style="display:flex;justify-content:space-between"><span>Prontuário:</span> <strong style="color:var(--slate-800)">${p.prontuario}</strong></div>
-          <div style="display:flex;justify-content:space-between"><span>Idade:</span> <strong style="color:var(--slate-800)">${p.idade} anos</strong></div>
-          <div style="display:flex;justify-content:space-between"><span>Diagnóstico:</span> <strong style="color:var(--slate-800)">${p.diagnostico || '-'}</strong></div>
-          <div style="display:flex;justify-content:space-between"><span>Internado há:</span> <strong style="color:var(--slate-800)">${diasTexto}</strong></div>
+        <div class="pac-card-name">${p.nome}</div>
+        <div class="pac-card-diag">${p.diagnostico || 'Diagnóstico não informado'}</div>
+        ${alertas.length ? `<div class="pac-card-alerts">${alertas.join('')}</div>` : ''}
+        <div class="pac-card-meta">
+          <div class="pac-meta-item"><span>Setor</span><strong>${p.setor_nome || '—'}</strong></div>
+          <div class="pac-meta-item"><span>Prontuário</span><strong>${p.prontuario || '—'}</strong></div>
+          <div class="pac-meta-item"><span>Idade</span><strong>${p.idade ? p.idade + ' anos' : '—'}</strong></div>
+          <div class="pac-meta-item"><span>Internado há</span><strong>${diff !== null ? diff + ' dias' : '—'}</strong></div>
         </div>
-        <div style="display:flex;gap:8px;border-top:1px solid var(--slate-100);padding-top:12px">
-          <button class="btn btn-ghost btn-sm" style="flex:1" onclick="App.verPaciente(${p.id})">Abrir Prontuário</button>
-          <button class="btn btn-ghost btn-sm write-only" title="Editar" onclick="App.openEditPaciente(${p.id})">✏️</button>
+        <div class="pac-card-footer">
+          <button class="btn btn-primary btn-sm" style="flex:1" onclick="App.verPaciente(${p.id})">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Prontuário
+          </button>
+          ${canEdit ? `<button class="btn btn-ghost btn-sm write-only" title="Editar dados" onclick="App.openEditPaciente(${p.id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>` : ''}
         </div>
-      </div>
-      `;
+      </div>`;
     }).join('');
   },
 
-  openModalNovoPaciente() {
-    ['pac-nome', 'pac-idade', 'pac-pront', 'pac-leito', 'pac-fone', 'pac-diag'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.value = '';
-    });
-    const d = document.getElementById('pac-data-int');
-    if(d) d.value = today();
-    showModal('modal-novo-pac');
-  },
-
-  async salvarPaciente() {
-    const nome = document.getElementById('pac-nome').value;
-    const idade = document.getElementById('pac-idade').value;
-    const prontuario = document.getElementById('pac-pront').value;
-    const leito = document.getElementById('pac-leito').value;
-    const fone = document.getElementById('pac-fone').value;
-    const diagnostico = document.getElementById('pac-diag').value;
-    const data_internacao = document.getElementById('pac-data-int').value;
-
-    if (!nome || !idade || !leito || !prontuario) return toast('Preencha os campos obrigatórios', 'error');
-
-    try {
-      await api('POST', '/api/pacientes', { nome, idade, prontuario, leito, fone, diagnostico, data_internacao });
-      toast('Paciente cadastrado com sucesso!');
-      closeModal('modal-novo-pac');
-      this.loadPacientes();
-    } catch (e) { toast(e.message, 'error'); }
-  },
-
-  // --- NOVAS FUNCOES ---
+  /* ─── TRANSFERÊNCIAS ─────────────────────────────────── */
   renderTransferencias(lista) {
-    const div = document.getElementById('sessao-transferencia');
+    const div  = document.getElementById('sessao-transferencia');
     const cont = document.getElementById('lista-transferencia');
     if (!div || !cont) return;
-    if (lista.length === 0) { div.style.display = 'none'; return; }
-    
+    if (!lista.length) { div.style.display = 'none'; return; }
+
     div.style.display = 'block';
     cont.innerHTML = lista.map(p => `
-      <div class="card" style="padding:12px; display:flex; justify-content:space-between; align-items:center">
-        <span style="font-size:14px"><b>${p.nome}</b> (Leito: ${p.leito})</span>
-        <button class="btn btn-sm btn-primary write-only" onclick="App.confirmarRecebimento(${p.id})">Confirmar Entrada</button>
-      </div>
-    `).join('');
+      <div class="transfer-item">
+        <div>
+          <strong>${p.nome}</strong>
+          <span style="font-size:11px;color:#92400e;margin-left:8px">Leito ${p.leito || '—'}</span>
+        </div>
+        <button class="btn btn-sm write-only" style="background:#92400e;color:#fff" onclick="App.confirmarRecebimento(${p.id})">
+          ✓ Confirmar Chegada
+        </button>
+      </div>`
+    ).join('');
   },
 
   async confirmarRecebimento(pid) {
-    if(!confirm('Confirma a chegada do paciente neste setor?')) return;
+    if (!confirm('Confirma a chegada do paciente neste setor?')) return;
     try {
       await api('POST', `/api/pacientes/${pid}/receber`);
-      toast('Paciente recebido!');
+      toast('Paciente recebido com sucesso!');
       this.loadPacientes();
-    } catch(e) { toast(e.message, 'error'); }
+    } catch (e) { toast(e.message, 'error'); }
   },
 
   openModalTransferencia() {
     const sel = document.getElementById('transf-setor');
     const p = State.currentPacienteData;
-    sel.innerHTML = '<option value="">Escolha o destino...</option>' + 
-      State.setores.filter(s => s.id != p.setor_id_atual)
-      .map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
-    
-    closeModal('modal-detalhes');
-    showModal('modal-transferencia');
+    sel.innerHTML = '<option value="">Selecione o destino...</option>' +
+      State.setores.filter(s => s.id !== p.setor_id_atual)
+        .map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+    this.closeModal('modal-detalhes');
+    this.openModal('modal-transferencia');
   },
 
   async confirmarTransferencia() {
     const dest = document.getElementById('transf-setor').value;
-    if(!dest) return toast('Selecione um setor', 'error');
+    if (!dest) return toast('Selecione um setor de destino', 'error');
     try {
-      await api('POST', `/api/pacientes/${State.currentPacienteId}/transferir`, { setor_id_destino: dest });
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/transferir`, { setor_id_destino: Number(dest) });
       toast('Transferência solicitada!');
-      closeModal('modal-transferencia');
+      this.closeModal('modal-transferencia');
       this.loadPacientes();
-    } catch(e) { toast(e.message, 'error'); }
+    } catch (e) { toast(e.message, 'error'); }
   },
 
-  async deletarPaciente() {
-    if (!confirm('ATENÇÃO: Tem certeza que deseja apagar este paciente e TODO o seu histórico? Esta ação não pode ser desfeita.')) return;
+  /* ─── CADASTRO/EDIÇÃO PACIENTE ───────────────────────── */
+  openModalNovoPaciente() {
+    ['pac-nome', 'pac-idade', 'pac-pront', 'pac-leito', 'pac-fone', 'pac-diag'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    const d = document.getElementById('pac-data-int');
+    if (d) d.value = today();
+
+    // Setor: esconder para estagiário (setor fixo)
+    const setorGrp = document.getElementById('pac-setor-group');
+    if (setorGrp) {
+      if (State.user.nivel_acesso === 'estagiario') {
+        setorGrp.style.display = 'none';
+      } else {
+        setorGrp.style.display = 'block';
+        const sel = document.getElementById('pac-setor');
+        sel.innerHTML = '<option value="">Sem setor</option>' + State.setores.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+      }
+    }
+    this.openModal('modal-novo-pac');
+  },
+
+  async salvarPaciente() {
+    const nome = document.getElementById('pac-nome').value.trim();
+    const idade = document.getElementById('pac-idade').value;
+    const prontuario = document.getElementById('pac-pront').value.trim();
+    const leito = document.getElementById('pac-leito').value.trim();
+    const fone = document.getElementById('pac-fone').value.trim();
+    const diagnostico = document.getElementById('pac-diag').value.trim();
+    const data_internacao = document.getElementById('pac-data-int').value;
+    const setor_id = document.getElementById('pac-setor')?.value || null;
+
+    if (!nome) return toast('Informe o nome do paciente', 'error');
+    if (!leito) return toast('Informe o leito', 'error');
+    if (!prontuario) return toast('Informe o prontuário', 'error');
+
     try {
-      await api('DELETE', `/api/pacientes/${State.currentPacienteId}`);
-      toast('Paciente apagado com sucesso!');
-      closeModal('modal-detalhes');
+      await api('POST', '/api/pacientes', { nome, idade: idade || null, prontuario, leito, fone, diagnostico, data_internacao, setor_id: setor_id || null });
+      toast('Paciente cadastrado com sucesso!');
+      this.closeModal('modal-novo-pac');
       this.loadPacientes();
-    } catch(e) { toast(e.message, 'error'); }
+    } catch (e) { toast(e.message, 'error'); }
   },
 
   openEditPaciente(pid) {
     const p = State.pacientes.find(x => x.id === pid);
     if (!p) return;
     State.editingPacienteId = pid;
-    
-    document.getElementById('edit-pac-nome').value = p.nome;
-    document.getElementById('edit-pac-idade').value = p.idade;
-    document.getElementById('edit-pac-pront').value = p.prontuario;
-    document.getElementById('edit-pac-leito').value = p.leito;
-    document.getElementById('edit-pac-fone').value = p.fone || '';
-    document.getElementById('edit-pac-diag').value = p.diagnostico || '';
-    document.getElementById('edit-pac-data').value = p.data_internacao || '';
-    
-    showModal('modal-edit-pac');
+    document.getElementById('edit-pac-nome').value  = p.nome || '';
+    document.getElementById('edit-pac-idade').value = p.idade || '';
+    document.getElementById('edit-pac-pront').value = p.prontuario || '';
+    document.getElementById('edit-pac-leito').value = p.leito || '';
+    document.getElementById('edit-pac-fone').value  = p.fone || '';
+    document.getElementById('edit-pac-diag').value  = p.diagnostico || '';
+    document.getElementById('edit-pac-data').value  = p.data_internacao || '';
+    this.openModal('modal-edit-pac');
+  },
+
+  openEditPacienteFromDetail() {
+    const p = State.currentPacienteData;
+    if (!p) return;
+    State.editingPacienteId = p.id;
+    document.getElementById('edit-pac-nome').value  = p.nome || '';
+    document.getElementById('edit-pac-idade').value = p.idade || '';
+    document.getElementById('edit-pac-pront').value = p.prontuario || '';
+    document.getElementById('edit-pac-leito').value = p.leito || '';
+    document.getElementById('edit-pac-fone').value  = p.fone || '';
+    document.getElementById('edit-pac-diag').value  = p.diagnostico || '';
+    document.getElementById('edit-pac-data').value  = p.data_internacao || '';
+    this.openModal('modal-edit-pac');
   },
 
   async salvarEdicaoPaciente() {
     const payload = {
-      nome: document.getElementById('edit-pac-nome').value,
-      idade: document.getElementById('edit-pac-idade').value,
-      prontuario: document.getElementById('edit-pac-pront').value,
-      leito: document.getElementById('edit-pac-leito').value,
-      fone: document.getElementById('edit-pac-fone').value,
-      diagnostico: document.getElementById('edit-pac-diag').value,
-      data_internacao: document.getElementById('edit-pac-data').value
+      nome:            document.getElementById('edit-pac-nome').value.trim(),
+      idade:           document.getElementById('edit-pac-idade').value || null,
+      prontuario:      document.getElementById('edit-pac-pront').value.trim(),
+      leito:           document.getElementById('edit-pac-leito').value.trim(),
+      fone:            document.getElementById('edit-pac-fone').value.trim(),
+      diagnostico:     document.getElementById('edit-pac-diag').value.trim(),
+      data_internacao: document.getElementById('edit-pac-data').value,
     };
+    if (!payload.nome) return toast('Nome é obrigatório', 'error');
     try {
       await api('PUT', `/api/pacientes/${State.editingPacienteId}`, payload);
-      toast('Paciente atualizado com sucesso!');
-      closeModal('modal-edit-pac');
+      toast('Paciente atualizado!');
+      this.closeModal('modal-edit-pac');
       this.loadPacientes();
-    } catch(e) { toast(e.message, 'error'); }
-  },
-
-  /* ─── DETALHES DO PACIENTE ─────────────────────────── */
-  async verPaciente(pid) {
-    try {
-      const data = await api('GET', `/api/pacientes/${pid}/detalhes`);
-      State.currentPacienteId = pid;
-      State.currentPacienteData = data.paciente;
-      this.renderPacienteDetalhes(data);
-      showModal('modal-detalhes');
+      // Se prontuário estiver aberto, recarregar
+      if (State.currentPacienteId === State.editingPacienteId) {
+        this.verPaciente(State.editingPacienteId);
+      }
     } catch (e) { toast(e.message, 'error'); }
   },
 
-  renderPacienteDetalhes(data) {
-    const p = data.paciente;
-    document.getElementById('det-nome').textContent = p.nome;
-    document.getElementById('det-badge-setor').textContent = p.setor_nome || 'Setor não informado';
-    document.getElementById('det-badge-status').textContent = p.status.toUpperCase();
-    
-    document.getElementById('det-info-basica').innerHTML = `
-      <div><span style="color:var(--slate-500)">Prontuário:</span> <b>${p.prontuario}</b></div>
-      <div><span style="color:var(--slate-500)">Idade:</span> <b>${p.idade} anos</b></div>
-      <div><span style="color:var(--slate-500)">Leito:</span> <b>${p.leito}</b></div>
-      <div><span style="color:var(--slate-500)">Telefone:</span> <b>${p.fone || '—'}</b></div>
-      <div><span style="color:var(--slate-500)">Admissão:</span> <b>${formatDate(p.data_internacao)}</b></div>
-      <div><span style="color:var(--slate-500)">Diagnóstico:</span> <b>${p.diagnostico || 'Não informado'}</b></div>
-    `;
-
-    document.getElementById('btn-alta-paciente').style.display = (p.status === 'internado') ? 'inline-flex' : 'none';
-
-    const btnDel = document.getElementById('btn-delete-paciente');
-    if (btnDel) {
-      btnDel.style.display = (State.user.nivel_acesso === 'admin') ? 'inline-flex' : 'none';
-    }
-
-    this.renderProcedimentos(data.procedimentos);
-    this.renderInfeccoes(data.infeccoes);
-    this.renderRegistros(data.registros);
+  async deletarPaciente() {
+    if (!confirm('ATENÇÃO: Excluir este paciente apaga todo o histórico permanentemente. Confirmar?')) return;
+    try {
+      await api('DELETE', `/api/pacientes/${State.currentPacienteId}`);
+      toast('Paciente excluído');
+      this.closeModal('modal-detalhes');
+      this.loadPacientes();
+    } catch (e) { toast(e.message, 'error'); }
   },
 
-  /* ─── PROCEDIMENTOS (DISPOSITIVOS) ─────────────────── */
+  /* ─── DETALHES DO PACIENTE ───────────────────────────── */
+  async verPaciente(pid) {
+    try {
+      // Usa GET /api/pacientes/:id (retorna dados completos com registros/procedimentos/infecções)
+      const pac = await api('GET', `/api/pacientes/${pid}`);
+      State.currentPacienteId  = pid;
+      State.currentPacienteData = pac;
+      this.renderPacienteDetalhes(pac);
+      this.openModal('modal-detalhes');
+    } catch (e) { toast(e.message || 'Erro ao carregar prontuário', 'error'); }
+  },
+
+  renderPacienteDetalhes(p) {
+    document.getElementById('det-nome').textContent = p.nome;
+    document.getElementById('det-badge-setor').textContent = p.setor_nome || 'Setor não informado';
+
+    const statusBadge = document.getElementById('det-badge-status');
+    statusBadge.textContent = p.status === 'internado' ? 'Internado' : 'Alta';
+    statusBadge.className = 'badge ' + (p.status === 'internado' ? 'badge-green' : 'badge-gray');
+
+    const diff = diffDias(p.data_internacao);
+    document.getElementById('det-badge-dias').innerHTML = diasBadge(diff);
+
+    document.getElementById('det-info-basica').innerHTML = `
+      <div class="det-info-item"><span>Prontuário</span><strong>${p.prontuario || '—'}</strong></div>
+      <div class="det-info-item"><span>Idade</span><strong>${p.idade ? p.idade + ' anos' : '—'}</strong></div>
+      <div class="det-info-item"><span>Leito</span><strong>${p.leito || '—'}</strong></div>
+      <div class="det-info-item"><span>Telefone</span><strong>${p.fone || '—'}</strong></div>
+      <div class="det-info-item"><span>Data de Admissão</span><strong>${formatDate(p.data_internacao)}</strong></div>
+      <div class="det-info-item"><span>Diagnóstico</span><strong>${p.diagnostico || 'Não informado'}</strong></div>`;
+
+    const btnAlta = document.getElementById('btn-alta-paciente');
+    if (btnAlta) btnAlta.style.display = (p.status === 'internado' && State.user.nivel_acesso !== 'espectador') ? 'inline-flex' : 'none';
+
+    const btnDel = document.getElementById('btn-delete-paciente');
+    if (btnDel) btnDel.style.display = State.user.nivel_acesso === 'admin' ? 'inline-flex' : 'none';
+
+    const btnTransf = document.getElementById('btn-transferir');
+    if (btnTransf) btnTransf.style.display = (p.status === 'internado' && State.user.nivel_acesso !== 'espectador') ? 'inline-flex' : 'none';
+
+    this.renderProcedimentos(p.procedimentos || []);
+    this.renderInfeccoes(p.infeccoes || []);
+    this.renderRegistros(p.registros || []);
+  },
+
+  /* ─── PROCEDIMENTOS ──────────────────────────────────── */
   renderProcedimentos(procs) {
     const c = document.getElementById('det-procedimentos');
-    if (!procs.length) { c.innerHTML = '<div style="color:var(--slate-400);font-size:13px">Nenhum dispositivo registrado.</div>'; return; }
-    
-    c.innerHTML = procs.map(pr => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--slate-100)">
+    if (!procs.length) {
+      c.innerHTML = '<div style="color:var(--ink-3);font-size:13px;padding:8px 0">Nenhum dispositivo registrado.</div>';
+      return;
+    }
+    c.innerHTML = procs.map(pr => {
+      const isAtivo = pr.status === 'ativo';
+      const diasDisp = diffDias(pr.data_insercao);
+      return `
+      <div class="proc-item">
         <div>
-          <div style="font-weight:600;font-size:13px;color:${pr.status === 'ativo' ? 'var(--slate-800)' : 'var(--slate-400)'}">
-            ${pr.tipo_procedimento}
-          </div>
-          <div style="font-size:11px;color:var(--slate-500)">
-            Instalado: ${formatDate(pr.data_insercao)} ${pr.status === 'removido' ? `| Removido: ${formatDate(pr.data_remocao)}` : ''}
+          <div class="proc-tipo" style="color:${isAtivo ? 'var(--ink)' : 'var(--ink-3)'}">${pr.tipo_procedimento}</div>
+          <div class="proc-meta">
+            Inserido: ${formatDate(pr.data_insercao)}
+            ${!isAtivo ? ` · Removido: ${formatDate(pr.data_remocao)}` : ` · ${diasDisp}d em uso`}
           </div>
         </div>
-        ${pr.status === 'ativo' ? `
-          <button class="btn btn-ghost btn-sm write-only" onclick="App.confirmRemoverProc(${pr.id})">Remover</button>
-        ` : `<span class="badge badge-gray" style="font-size:10px">Removido</span>`}
-      </div>
-    `).join('');
+        ${isAtivo
+          ? `<button class="btn btn-ghost btn-xs write-only" style="color:var(--red)" onclick="App.confirmRemoverProc(${pr.id})">Remover</button>`
+          : `<span class="badge badge-gray">Removido</span>`
+        }
+      </div>`;
+    }).join('');
   },
 
   toggleOutrosProcedimento() {
     const val = document.getElementById('proc-tipo').value;
     const box = document.getElementById('proc-outros');
-    if (box) {
-      box.style.display = (val === 'Outros') ? 'block' : 'none';
-    }
+    if (box) box.style.display = (val === 'Outros') ? 'block' : 'none';
   },
 
   openModalProc() {
     document.getElementById('proc-tipo').value = 'Cateter Venoso Central (CVC)';
     this.toggleOutrosProcedimento();
     document.getElementById('proc-data').value = today();
-    showModal('modal-proc');
+    this.openModal('modal-proc');
   },
 
   async salvarProc() {
     let tipo = document.getElementById('proc-tipo').value;
     if (tipo === 'Outros') {
-      tipo = document.getElementById('proc-outros').value.trim();
-      if (!tipo) return toast('Digite o nome do dispositivo', 'error');
+      tipo = document.getElementById('proc-outros-val').value.trim();
+      if (!tipo) return toast('Descreva o dispositivo', 'error');
     }
-    const data_ins = document.getElementById('proc-data').value;
-    if (!data_ins) return toast('Informe a data', 'error');
-
+    const data_insercao = document.getElementById('proc-data').value;
+    if (!data_insercao) return toast('Informe a data de inserção', 'error');
     try {
-      await api('POST', `/api/pacientes/${State.currentPacienteId}/procedimentos`, { tipo_procedimento: tipo, data_insercao: data_ins });
-      toast('Dispositivo inserido!');
-      closeModal('modal-proc');
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/procedimentos`, { tipo_procedimento: tipo, data_insercao });
+      toast('Dispositivo registrado!');
+      this.closeModal('modal-proc');
       this.verPaciente(State.currentPacienteId);
     } catch (e) { toast(e.message, 'error'); }
   },
@@ -449,221 +573,320 @@ const App = {
   confirmRemoverProc(pid) {
     State.pendingProcId = pid;
     document.getElementById('proc-data-remocao').value = today();
-    showModal('modal-rm-proc');
+    this.openModal('modal-rm-proc');
   },
 
   async removerProc() {
-    const data_rem = document.getElementById('proc-data-remocao').value;
+    const data_remocao = document.getElementById('proc-data-remocao').value;
+    if (!data_remocao) return toast('Informe a data de remoção', 'error');
     try {
-      await api('POST', `/api/procedimentos/${State.pendingProcId}/remover`, { data_remocao: data_rem });
+      await api('POST', `/api/procedimentos/${State.pendingProcId}/remover`, { data_remocao });
       toast('Dispositivo removido!');
-      closeModal('modal-rm-proc');
+      this.closeModal('modal-rm-proc');
       this.verPaciente(State.currentPacienteId);
     } catch (e) { toast(e.message, 'error'); }
   },
 
-  /* ─── INFECÇÕES ────────────────────────────────────── */
+  /* ─── INFECÇÕES ──────────────────────────────────────── */
   renderInfeccoes(infs) {
     const c = document.getElementById('det-infeccoes');
-    if (!infs.length) { c.innerHTML = '<div style="color:var(--slate-400);font-size:13px">Nenhuma infecção notificada.</div>'; return; }
-    
+    if (!infs.length) {
+      c.innerHTML = '<div style="color:var(--ink-3);font-size:13px;padding:8px 0">Nenhuma infecção notificada.</div>';
+      return;
+    }
     c.innerHTML = infs.map(i => {
       const color = INF_COLORS[i.tipo_infeccao] || '#64748b';
       return `
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--slate-100)">
-        <div style="width:10px;height:10px;border-radius:50%;background:${color}"></div>
+      <div class="inf-item">
+        <div class="inf-dot" style="background:${color}"></div>
         <div>
           <div style="font-weight:600;font-size:13px">${i.tipo_infeccao}</div>
-          <div style="font-size:11px;color:var(--slate-500)">Notificado em: ${formatDate(i.data_notificacao)}</div>
+          <div style="font-size:11px;color:var(--ink-3)">Notificado em ${formatDate(i.data_notificacao)}</div>
         </div>
-      </div>
-      `;
+      </div>`;
     }).join('');
   },
 
   openModalInf() {
-    document.getElementById('inf-tipo').value = 'Trato Urinário';
+    document.getElementById('inf-tipo').value = 'Trato Urinario';
     document.getElementById('inf-data').value = today();
-    showModal('modal-inf');
+    this.openModal('modal-inf');
   },
 
   async salvarInf() {
     const tipo = document.getElementById('inf-tipo').value;
-    const dt = document.getElementById('inf-data').value;
+    const data_notificacao = document.getElementById('inf-data').value;
     try {
-      await api('POST', `/api/pacientes/${State.currentPacienteId}/infeccoes`, { tipo_infeccao: tipo, data_notificacao: dt });
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/infeccoes`, { tipo_infeccao: tipo, data_notificacao });
       toast('Infecção notificada!');
-      closeModal('modal-inf');
+      this.closeModal('modal-inf');
       this.verPaciente(State.currentPacienteId);
     } catch (e) { toast(e.message, 'error'); }
   },
 
-  /* ─── REGISTROS DIÁRIOS ────────────────────────────── */
+  /* ─── REGISTROS DIÁRIOS ──────────────────────────────── */
   renderRegistros(regs) {
     const c = document.getElementById('det-registros');
-    if (!regs.length) { c.innerHTML = '<div style="color:var(--slate-400);font-size:13px">Nenhum registro diário.</div>'; return; }
-    
+    if (!regs.length) {
+      c.innerHTML = '<div style="color:var(--ink-3);font-size:13px;padding:8px 0">Nenhum registro diário.</div>';
+      return;
+    }
     c.innerHTML = regs.map(r => `
-      <div style="background:var(--slate-50);padding:10px 14px;border-radius:8px;margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-weight:600;font-size:12px;color:var(--teal-600)">${formatDate(r.data)}</span>
-          <span style="font-size:12px;color:var(--slate-500)">Temp: ${r.temperatura ? r.temperatura+'°C' : '—'}</span>
-        </div>
-      </div>
-    `).join('');
+      <div class="reg-item">
+        <span style="font-weight:600;font-size:12px;color:var(--navy);font-family:\'IBM Plex Mono\',monospace">${formatDate(r.data)}</span>
+        <span style="font-size:12px;color:var(--ink-3)">Temp: <strong style="color:${r.temperatura && r.temperatura >= 38 ? 'var(--red)' : 'var(--ink)'}">${r.temperatura ? r.temperatura + '°C' : '—'}</strong></span>
+      </div>`).join('');
   },
 
   openModalReg() {
     document.getElementById('reg-data').value = today();
     document.getElementById('reg-temp').value = '';
-    showModal('modal-reg');
+    this.openModal('modal-reg');
   },
 
   async salvarReg() {
     const data = document.getElementById('reg-data').value;
-    const temp = document.getElementById('reg-temp').value;
+    const temperatura = parseFloat(document.getElementById('reg-temp').value) || null;
+    if (!data) return toast('Informe a data', 'error');
     try {
-      await api('POST', `/api/pacientes/${State.currentPacienteId}/registros`, { data, temperatura: parseFloat(temp) || null });
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/registros`, { data, temperatura });
       toast('Registro salvo!');
-      closeModal('modal-reg');
+      this.closeModal('modal-reg');
       this.verPaciente(State.currentPacienteId);
     } catch (e) { toast(e.message, 'error'); }
   },
 
-  /* ─── ALTA DE PACIENTE ─────────────────────────────── */
+  /* ─── ALTA ───────────────────────────────────────────── */
   openModalAlta() {
     State.pendingAltaPacId = State.currentPacienteId;
     const sel = document.getElementById('alta-motivo');
     sel.innerHTML = State.motivos.map(m => `<option value="${m.id}">${m.nome}</option>`).join('');
-    showModal('modal-alta');
+    this.openModal('modal-alta');
   },
 
   async confirmarAlta() {
-    const motivo_id = document.getElementById('alta-motivo').value;
+    const motivo_saida_id = document.getElementById('alta-motivo').value;
+    if (!motivo_saida_id) return toast('Selecione o motivo', 'error');
     try {
-      await api('POST', `/api/pacientes/${State.pendingAltaPacId}/alta`, { motivo_id });
+      // Endpoint correto: POST /api/pacientes/:id/alta  body: { motivo_saida_id }
+      await api('POST', `/api/pacientes/${State.pendingAltaPacId}/alta`, { motivo_saida_id: Number(motivo_saida_id) });
       toast('Alta registrada com sucesso!');
-      closeModal('modal-alta');
-      closeModal('modal-detalhes');
+      this.closeModal('modal-alta');
+      this.closeModal('modal-detalhes');
       this.loadPacientes();
     } catch (e) { toast(e.message, 'error'); }
   },
 
-  /* ─── DASHBOARD ────────────────────────────────────── */
+  /* ─── DASHBOARD ──────────────────────────────────────── */
   async loadDashboard() {
     const mes = document.getElementById('filtro-mes').value;
     try {
-      const data = await api('GET', `/api/dashboard?mes=${mes}`);
-      document.getElementById('dash-tot-int').textContent = data.total_internados;
-      document.getElementById('dash-altas-mes').textContent = data.altas_mes;
-      document.getElementById('dash-inf-mes').textContent = data.infeccoes_mes;
-      
-      const p = data.proporcoes;
-      document.getElementById('dash-prop-itu').textContent = `${p.ITU}%`;
-      document.getElementById('dash-prop-sepse').textContent = `${p.Sepse}%`;
-      document.getElementById('dash-prop-pneumonia').textContent = `${p.Pneumonia}%`;
-      document.getElementById('dash-prop-cirurgica').textContent = `${p['Ferida Operatória']}%`;
-    } catch (e) { toast('Erro ao carregar métricas', 'error'); }
+      // Endpoint correto: GET /api/dashboard/relatorios?mes=YYYY-MM
+      const data = await api('GET', `/api/dashboard/relatorios?mes=${mes}`);
+
+      // Total internados: carregar via pacientes
+      let totalInternados = '—';
+      try {
+        const pacs = await api('GET', '/api/pacientes');
+        totalInternados = pacs.filter(p => p.status === 'internado').length;
+      } catch {}
+
+      document.getElementById('dash-tot-int').textContent   = totalInternados;
+      document.getElementById('dash-altas-mes').textContent = data.pacientes_alta_geral ?? '—';
+      document.getElementById('dash-inf-mes').textContent   = data.total_infeccoes_mes ?? '—';
+      document.getElementById('dash-taxa').textContent      = (data.taxa_infeccao_geral ?? '—') + '%';
+
+      this.renderDashChart(data.detalhes || {}, data.total_infeccoes_mes || 0);
+      this.renderDashResumo(data);
+    } catch (e) {
+      toast('Erro ao carregar métricas', 'error');
+    }
   },
 
-  /* ─── CONFIGURAÇÕES & ADMIN ────────────────────────── */
+  renderDashChart(detalhes, total) {
+    const c = document.getElementById('dash-inf-chart');
+    const tipos = Object.keys(detalhes);
+    if (!tipos.length || total === 0) {
+      c.innerHTML = '<div style="color:var(--ink-3);font-size:13px;text-align:center;padding:20px">Nenhum dado para o período.</div>';
+      return;
+    }
+    const maxQtd = Math.max(...tipos.map(t => detalhes[t]?.qtd || 0), 1);
+    c.innerHTML = tipos.map(tipo => {
+      const color = INF_COLORS[tipo] || '#64748b';
+      const qtd   = detalhes[tipo]?.qtd  || 0;
+      const prop  = detalhes[tipo]?.prop || 0;
+      const pct   = Math.round((qtd / maxQtd) * 100);
+      return `
+      <div class="inf-row">
+        <div class="inf-dot" style="background:${color}"></div>
+        <div class="inf-name">${tipo}</div>
+        <div class="inf-bar-wrap"><div class="inf-bar" style="width:${pct}%;background:${color}20;border:1px solid ${color}40;position:relative">
+          <div style="position:absolute;inset:0;background:${color};width:${pct}%;border-radius:999px"></div>
+        </div></div>
+        <div class="inf-count">${qtd}</div>
+        <div style="font-size:11px;color:var(--ink-3);min-width:36px;text-align:right">${prop}%</div>
+      </div>`;
+    }).join('');
+  },
+
+  renderDashResumo(data) {
+    const c = document.getElementById('dash-resumo');
+    const mes = data.ano_mes || '—';
+    const itens = [
+      { label: 'Período',           val: mes },
+      { label: 'Pacientes com alta',val: data.pacientes_alta_geral ?? 0 },
+      { label: 'Infecções no mês',  val: data.total_infeccoes_mes ?? 0 },
+      { label: 'Taxa de infecção',  val: (data.taxa_infeccao_geral ?? 0) + '%' },
+    ];
+    c.innerHTML = itens.map(it => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-l)">
+        <span style="font-size:12px;color:var(--ink-3)">${it.label}</span>
+        <strong style="font-size:13px;color:var(--ink);font-family:'IBM Plex Mono',monospace">${it.val}</strong>
+      </div>`).join('');
+  },
+
+  /* ─── SETORES ────────────────────────────────────────── */
   async loadSetores() {
     try {
       const data = await api('GET', '/api/setores');
       State.setores = data;
-      const c = document.getElementById('lista-setores');
-      if (c) {
-        c.innerHTML = data.map(s => `
-          <div class="card" style="padding:15px;display:flex;justify-content:space-between">
-            <span style="font-weight:600">${s.nome}</span>
-            <span class="badge badge-gray">ID: ${s.id}</span>
-          </div>
-        `).join('');
+
+      const tbody = document.getElementById('lista-setores-tbody');
+      if (tbody) {
+        tbody.innerHTML = data.length === 0
+          ? '<tr><td colspan="3" style="text-align:center;color:var(--ink-3);padding:20px">Nenhum setor cadastrado.</td></tr>'
+          : data.map(s => `
+            <tr>
+              <td><span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--ink-3)">#${s.id}</span></td>
+              <td><strong>${s.nome}</strong></td>
+              <td style="text-align:right">
+                ${State.user?.nivel_acesso === 'admin' ? `<button class="btn btn-ghost btn-xs" style="color:var(--red)" onclick="App.deletarSetor(${s.id},'${s.nome.replace(/'/g,"\\'")}')">Excluir</button>` : ''}
+              </td>
+            </tr>`).join('');
       }
-      
-      const topSel = document.getElementById('topbar-setor-select');
-      if (topSel && State.user.nivel_acesso === 'estagiario') {
-        topSel.innerHTML = data.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
-        if (State.user.setor_id) topSel.value = State.user.setor_id;
+
+      // Populate select boxes
+      const pac_sel = document.getElementById('pac-setor');
+      if (pac_sel) {
+        pac_sel.innerHTML = '<option value="">Sem setor</option>' + data.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
       }
     } catch (e) { console.error('Erro setores', e); }
   },
 
+  openModal_setor() { this.openModal('modal-setor'); },
+
   async salvarSetor() {
     const nome = document.getElementById('setor-nome').value.trim();
-    if (!nome) return;
+    if (!nome) return toast('Informe o nome do setor', 'error');
     try {
       await api('POST', '/api/setores', { nome });
-      toast('Setor criado!');
-      closeModal('modal-setor');
+      toast('Setor criado com sucesso!');
+      this.closeModal('modal-setor');
       document.getElementById('setor-nome').value = '';
       this.loadSetores();
     } catch (e) { toast(e.message, 'error'); }
   },
 
+  async deletarSetor(id, nome) {
+    if (!confirm(`Excluir o setor "${nome}"? Esta ação pode afetar pacientes vinculados.`)) return;
+    try {
+      await api('DELETE', `/api/setores/${id}`);
+      toast('Setor excluído');
+      this.loadSetores();
+    } catch (e) { toast(e.message, 'error'); }
+  },
+
+  /* ─── MOTIVOS ────────────────────────────────────────── */
   async loadMotivos() {
     try {
-      State.motivos = await api('GET', '/api/motivos');
+      // Endpoint correto: GET /api/motivos_saida
+      State.motivos = await api('GET', '/api/motivos_saida');
     } catch (e) { console.error('Erro motivos', e); }
   },
 
+  /* ─── USUÁRIOS ───────────────────────────────────────── */
   async loadUsuarios() {
     try {
       const data = await api('GET', '/api/usuarios');
-      document.getElementById('lista-usuarios').innerHTML = data.map(u => `
-        <div class="card" style="padding:15px;display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:600">${u.nome}</div>
-            <div style="font-size:12px;color:var(--slate-500)">${u.email}</div>
-          </div>
-          <span class="badge badge-blue">${u.nivel_acesso}</span>
-        </div>
-      `).join('');
-      
-      const userSetorSel = document.getElementById('user-setor');
-      userSetorSel.innerHTML = '<option value="">Sem Setor</option>' + 
-        State.setores.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+      const tbody = document.getElementById('lista-usuarios');
+      tbody.innerHTML = data.length === 0
+        ? '<tr><td colspan="5" style="text-align:center;color:var(--ink-3);padding:20px">Nenhum usuário cadastrado.</td></tr>'
+        : data.map(u => {
+          const nivelBadge = {
+            admin: 'badge-red', estagiario: 'badge-navy', espectador: 'badge-gray'
+          }[u.nivel_acesso] || 'badge-gray';
+          return `
+          <tr>
+            <td><strong>${u.nome}</strong></td>
+            <td style="font-size:12px;color:var(--ink-3)">${u.email}</td>
+            <td><span class="badge ${nivelBadge}">${NIVEL_LABELS[u.nivel_acesso] || u.nivel_acesso}</span></td>
+            <td style="font-size:12px;color:var(--ink-3)">${u.setor_nome || '—'}</td>
+            <td style="text-align:right">
+              ${u.id !== State.user?.id ? `<button class="btn btn-ghost btn-xs" style="color:var(--red)" onclick="App.deletarUsuario(${u.id},'${u.nome.replace(/'/g,"\\'")}')">Excluir</button>` : '<span style="font-size:11px;color:var(--ink-3)">Você</span>'}
+            </td>
+          </tr>`;
+        }).join('');
+
+      // Setor select no modal de usuário
+      const setorSel = document.getElementById('user-setor');
+      if (setorSel) {
+        setorSel.innerHTML = '<option value="">Sem setor</option>' + State.setores.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+      }
     } catch (e) { toast('Erro ao carregar usuários', 'error'); }
   },
 
   async salvarUsuario() {
     const payload = {
-      nome: document.getElementById('user-nome').value,
-      email: document.getElementById('user-email').value,
-      senha: document.getElementById('user-senha').value,
+      nome:         document.getElementById('user-nome').value.trim(),
+      email:        document.getElementById('user-email').value.trim(),
+      senha:        document.getElementById('user-senha').value,
       nivel_acesso: document.getElementById('user-nivel').value,
-      setor_id: document.getElementById('user-setor').value || null
+      setor_id:     document.getElementById('user-setor').value || null,
     };
-    if (!payload.nome || !payload.email || !payload.senha) return toast('Preencha os campos obrigatórios', 'error');
-    
+    if (!payload.nome || !payload.email || !payload.senha) return toast('Preencha todos os campos obrigatórios', 'error');
     try {
       await api('POST', '/api/usuarios', payload);
-      toast('Usuário criado!');
-      closeModal('modal-user');
+      toast('Usuário criado com sucesso!');
+      this.closeModal('modal-user');
+      ['user-nome','user-email','user-senha'].forEach(id => document.getElementById(id).value = '');
       this.loadUsuarios();
     } catch (e) { toast(e.message, 'error'); }
   },
 
+  async deletarUsuario(id, nome) {
+    if (!confirm(`Excluir o usuário "${nome}"?`)) return;
+    try {
+      await api('DELETE', `/api/usuarios/${id}`);
+      toast('Usuário excluído');
+      this.loadUsuarios();
+    } catch (e) { toast(e.message, 'error'); }
+  },
+
+  /* ─── SENHA ──────────────────────────────────────────── */
   openModalMudarSenha() {
     document.getElementById('senha-atual').value = '';
     document.getElementById('senha-nova').value = '';
-    showModal('modal-mudar-senha');
+    this.openModal('modal-mudar-senha');
   },
 
   async salvarNovaSenha() {
-    const atual = document.getElementById('senha-atual').value;
-    const nova = document.getElementById('senha-nova').value;
-    if (!atual || !nova) return toast('Preencha os campos', 'error');
-    
+    const senha_atual = document.getElementById('senha-atual').value;
+    const nova_senha  = document.getElementById('senha-nova').value;
+    if (!senha_atual || !nova_senha) return toast('Preencha os dois campos', 'error');
+    if (nova_senha.length < 6) return toast('A nova senha deve ter no mínimo 6 caracteres', 'error');
     try {
-      await api('POST', '/api/auth/mudar-senha', { senha_atual: atual, senha_nova: nova });
+      // Endpoint correto: PUT /api/auth/senha  body: { senha_atual, nova_senha }
+      await api('PUT', '/api/auth/senha', { senha_atual, nova_senha });
       toast('Senha alterada com sucesso!');
-      closeModal('modal-mudar-senha');
+      this.closeModal('modal-mudar-senha');
     } catch (e) { toast(e.message, 'error'); }
-  }
+  },
 };
 
-/* ─── INIT BOOTSTRAP ─────────────────────────────────── */
+/* ─── BOOTSTRAP ──────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  App.checkSession();
+});──── */
 document.addEventListener('DOMContentLoaded', () => {
   App.checkSession();
 });
