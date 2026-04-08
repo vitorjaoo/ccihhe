@@ -69,8 +69,11 @@ class TursoAdapter:
 
     def executescript(self, sql_script):
         statements = [s.strip() for s in sql_script.split(';') if s.strip()]
-        if statements:
-            self.client.batch(statements)
+        for stmt in statements:
+            try:
+                self.client.execute(stmt)
+            except Exception as e:
+                print(f"[DB] executescript stmt error (ignored): {e}")
 
     def commit(self):
         pass
@@ -110,12 +113,12 @@ def init_db():
         except:
             pass
 
-        motivos = ['Alta Medica', 'Obito', 'Transferencia para outro hospital']
+        motivos = ['Alta Médica', 'Óbito', 'Transferência para outro hospital']
         for m in motivos:
             c.execute("INSERT OR IGNORE INTO motivos_saida(nome) VALUES(?)", (m,))
         c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('UTI Geral')")
-        c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clinica Cirurgica')")
-        c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clinica Medica')")
+        c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Cirúrgica')")
+        c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Médica')")
 
         admin_check = c.execute("SELECT * FROM usuarios WHERE email='admin@ccih.com'").fetchone()
         if not admin_check:
@@ -569,7 +572,7 @@ def remover_procedimento(proc_id):
     return jsonify(proc)
 
 
-TIPOS_INFECCAO = ['Trato Urinario', 'Sepse', 'Pneumonia', 'Ferida Operatoria', 'Outra']
+TIPOS_INFECCAO = ['Trato Urinário', 'Sepse', 'Pneumonia', 'Ferida Operatória', 'Outra']
 
 
 @app.route('/api/pacientes/<int:pid>/infeccoes', methods=['POST'])
@@ -593,7 +596,54 @@ def add_infeccao(pid):
     return jsonify(inf), 201
 
 
-@app.route('/api/motivos_saida', methods=['GET'])
+@app.route('/api/auth/mudar-senha', methods=['POST'])
+@login_required
+def mudar_senha_alias():
+    data = request.json or {}
+    senha_atual = data.get('senha_atual', '')
+    nova_senha = data.get('senha_nova', '')
+    conn = get_db()
+    user = conn.execute("SELECT senha FROM usuarios WHERE id=?", (session['user_id'],)).fetchone()
+    if hash_password(senha_atual) != user['senha']:
+        conn.close()
+        return jsonify({'error': 'A senha atual está incorreta'}), 401
+    if len(nova_senha) < 6:
+        conn.close()
+        return jsonify({'error': 'A nova senha deve ter no mínimo 6 caracteres'}), 400
+    conn.execute("UPDATE usuarios SET senha=? WHERE id=?", (hash_password(nova_senha), session['user_id']))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/pacientes/<int:pid>/detalhes', methods=['GET'])
+@login_required
+def get_paciente_detalhes(pid):
+    conn = get_db()
+    pac = conn.execute(
+        "SELECT p.*, s.nome as setor_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE p.id=?",
+        (pid,)
+    ).fetchone()
+    if not pac:
+        conn.close()
+        return jsonify({'error': 'Não encontrado'}), 404
+    if session['nivel_acesso'] == 'estagiario' and pac['setor_id_atual'] != session['setor_id']:
+        conn.close()
+        return jsonify({'error': 'Sem permissão'}), 403
+    registros = conn.execute(
+        "SELECT * FROM registros_diarios WHERE paciente_id=? ORDER BY data DESC", (pid,)
+    ).fetchall()
+    procedimentos = conn.execute(
+        "SELECT * FROM procedimentos WHERE paciente_id=? ORDER BY data_insercao DESC", (pid,)
+    ).fetchall()
+    infeccoes = conn.execute(
+        "SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY data_notificacao DESC", (pid,)
+    ).fetchall()
+    conn.close()
+    return jsonify({'paciente': pac, 'registros': registros, 'procedimentos': procedimentos, 'infeccoes': infeccoes})
+
+
+
 @login_required
 def get_motivos():
     conn = get_db()
@@ -651,10 +701,10 @@ def relatorios():
             'total_infeccoes_mes': total_inf,
             'taxa_infeccao_geral': taxa_geral,
             'detalhes': {
-                'Trato Urinario': {'qtd': get_inf('Trato Urinario'), 'prop': taxa_prop(get_inf('Trato Urinario'))},
+                'Trato Urinário': {'qtd': get_inf('Trato Urinário'), 'prop': taxa_prop(get_inf('Trato Urinário'))},
                 'Sepse': {'qtd': get_inf('Sepse'), 'prop': taxa_prop(get_inf('Sepse'))},
                 'Pneumonia': {'qtd': get_inf('Pneumonia'), 'prop': taxa_prop(get_inf('Pneumonia'))},
-                'Ferida Operatoria': {'qtd': get_inf('Ferida Operatoria'), 'prop': taxa_prop(get_inf('Ferida Operatoria'))},
+                'Ferida Operatória': {'qtd': get_inf('Ferida Operatória'), 'prop': taxa_prop(get_inf('Ferida Operatória'))},
                 'Outra': {'qtd': get_inf('Outra'), 'prop': taxa_prop(get_inf('Outra'))}
             }
         }
