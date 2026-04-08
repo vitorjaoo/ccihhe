@@ -3,643 +3,892 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CCIH — Sistema de Rastreio de Infecção Hospitalar</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>CCIH — Rastreio de Infecção Hospitalar · UFAL</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
+    /* ═══════════════════════════════════════════════════
+       TOKENS — CCIH / UFAL
+       ─ Azul institucional UFAL #003DA5 + teal médico
+    ═══════════════════════════════════════════════════ */
     :root {
-      --slate-50:  #f8fafc;
-      --slate-100: #f1f5f9;
-      --slate-200: #e2e8f0;
-      --slate-300: #cbd5e1;
-      --slate-400: #94a3b8;
-      --slate-500: #64748b;
-      --slate-700: #334155;
-      --slate-800: #1e293b;
-      --teal-50:   #f0fdfa;
-      --teal-500:  #14b8a6;
-      --teal-600:  #0d9488;
-      --teal-700:  #0f766e;
-      --sky-50:    #f0f9ff;
-      --sky-500:   #0ea5e9;
-      --sky-600:   #0284c7;
-      --rad-sm:    8px;
-      --rad-md:    12px;
-      --rad-lg:    16px;
+      --navy:     #003DA5;
+      --navy-d:   #002980;
+      --navy-l:   #EBF0FB;
+      --navy-lx:  #F4F7FD;
+      --teal:     #0D7E6A;
+      --teal-d:   #0A6457;
+      --teal-l:   #E6F5F2;
+      --amber:    #D97706;
+      --amber-l:  #FFFBEB;
+      --red:      #C0392B;
+      --red-l:    #FEF2F2;
+      --green:    #16A34A;
+      --green-l:  #F0FDF4;
+      --ink:      #0F1923;
+      --ink-2:    #2D3B4F;
+      --ink-3:    #4E6175;
+      --border:   #D4DCE8;
+      --border-l: #EBF0F7;
+      --bg:       #F4F7FB;
+      --surface:  #FFFFFF;
+      --rad-xs:   4px;
+      --rad-sm:   8px;
+      --rad-md:   12px;
+      --rad-lg:   16px;
+      --rad-xl:   20px;
+      --sidebar-w: 268px;
+      --topbar-h:  64px;
+      --shadow-sm: 0 1px 3px rgba(0,30,80,0.06), 0 1px 2px rgba(0,30,80,0.04);
+      --shadow-md: 0 4px 12px rgba(0,30,80,0.09), 0 2px 4px rgba(0,30,80,0.05);
+      --shadow-lg: 0 16px 40px rgba(0,30,80,0.13);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'DM Sans', sans-serif; background-color: var(--slate-50); color: var(--slate-800); -webkit-font-smoothing: antialiased; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 7px; padding: 9px 18px; font-family: inherit; font-weight: 600;
+      font-size: 13px; border-radius: var(--rad-sm); border: none; cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s; white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary   { background: var(--navy); color: #fff; box-shadow: 0 2px 8px rgba(0,61,165,0.25); }
+    .btn-primary:hover  { background: var(--navy-d); }
+    .btn-teal      { background: var(--teal); color: #fff; }
+    .btn-teal:hover     { background: var(--teal-d); }
+    .btn-ghost     { background: transparent; color: var(--ink-2); border: 1px solid var(--border); }
+    .btn-ghost:hover    { background: var(--bg); color: var(--ink); }
+    .btn-danger    { background: var(--red); color: #fff; }
+    .btn-danger:hover   { background: #a93226; }
+    .btn-sm        { padding: 6px 13px; font-size: 12px; }
+    .btn-xs        { padding: 4px 10px; font-size: 11px; }
+
+    /* ── INPUTS ── */
+    .input-field {
+      width: 100%; padding: 9px 12px; border-radius: var(--rad-sm);
+      border: 1.5px solid var(--border); font-family: inherit;
+      font-size: 13px; color: var(--ink); background: #fff; transition: 0.15s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .input-field:focus  { outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(0,61,165,0.12); }
+    .label { display: block; font-size: 11px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface); border-radius: var(--rad-md);
+      border: 1px solid var(--border-l); box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .card-hover:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 999px; font-size: 10px;
+      font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.4;
+    }
+    .badge-navy   { background: var(--navy-l); color: var(--navy); border: 1px solid #c2d0ef; }
+    .badge-teal   { background: var(--teal-l); color: var(--teal); border: 1px solid #c0dfd8; }
+    .badge-gray   { background: var(--bg); color: var(--ink-3); border: 1px solid var(--border); }
+    .badge-red    { background: var(--red-l); color: var(--red); border: 1px solid #f8d0cc; }
+    .badge-green  { background: var(--green-l); color: var(--green); border: 1px solid #bbf7d0; }
+    .badge-amber  { background: var(--amber-l); color: var(--amber); border: 1px solid #fde68a; }
+
+    .dias-badge { padding: 3px 9px; border-radius: var(--rad-xs); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace; }
+    .dias-ok     { background: var(--green-l); color: var(--green); border: 1px solid #bbf7d0; }
+    .dias-warn   { background: var(--amber-l); color: var(--amber); border: 1px solid #fde68a; }
+    .dias-danger { background: var(--red-l); color: var(--red); border: 1px solid #f8d0cc; }
+
+    /* ═══════════════════════════════════════════════════
+       LOGIN SCREEN
+    ═══════════════════════════════════════════════════ */
+    #login-screen {
+      position: fixed; inset: 0; background: linear-gradient(140deg, #001f6b 0%, #003DA5 50%, #0d5e8c 100%);
+      display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px;
+    }
+
+    #login-screen::before {
+      content: ''; position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .login-card {
+      position: relative; background: #fff; padding: 44px 40px;
+      border-radius: 20px; width: 100%; max-width: 420px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+    }
+
+    .login-logo-wrap {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+      padding-bottom: 24px; border-bottom: 1px solid var(--border-l);
+    }
+    .login-logo-box {
+      width: 52px; height: 52px; background: var(--navy-l); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      border: 1.5px solid #c2d0ef;
+    }
+    .login-logo-box img { width: 36px; height: auto; object-fit: contain; }
+    .login-brand h1 { font-size: 20px; font-weight: 700; color: var(--navy); letter-spacing: -0.5px; }
+    .login-brand p { font-size: 12px; color: var(--ink-3); margin-top: 2px; font-weight: 500; }
+
+    .login-form-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 20px; }
+
+    .login-field { margin-bottom: 16px; }
+    .login-field .label { margin-bottom: 6px; }
     
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; font-weight: 600; border-radius: var(--rad-sm); cursor: pointer; transition: all 0.2s ease; border: none; font-size: 14px; }
-    .btn-primary { background-color: var(--teal-600); color: white; box-shadow: 0 4px 12px rgba(13,148,136,0.2); }
-    .btn-primary:hover { background-color: var(--teal-700); transform: translateY(-1px); }
-    .btn-ghost { background-color: transparent; color: var(--slate-700); border: 1px solid var(--slate-200); }
-    .btn-ghost:hover { background-color: var(--slate-100); color: var(--slate-800); }
-    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .login-error {
+      background: var(--red-l); color: var(--red); padding: 10px 14px;
+      border-radius: var(--rad-sm); font-size: 12px; font-weight: 600;
+      margin-bottom: 16px; border: 1px solid #f8d0cc; display: none;
+    }
 
-    .card { background: white; border-radius: var(--rad-md); border: 1px solid var(--slate-200); box-shadow: 0 2px 8px rgba(0,0,0,0.02); transition: all 0.3s ease; }
-    .card:hover { box-shadow: 0 10px 24px rgba(0,0,0,0.06); transform: translateY(-2px); }
+    .login-footer {
+      margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-l);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .login-footer span { font-size: 11px; color: var(--ink-3); }
+    .login-footer .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
 
-    .input-field { width: 100%; padding: 10px 14px; border-radius: var(--rad-sm); border: 1px solid var(--slate-300); font-family: inherit; font-size: 14px; color: var(--slate-800); background: white; transition: 0.2s; }
-    .input-field:focus { outline: none; border-color: var(--sky-500); box-shadow: 0 0 0 3px rgba(14,165,233,0.1); }
-    .label { display: block; font-size: 12px; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    /* ═══════════════════════════════════════════════════
+       APP LAYOUT
+    ═══════════════════════════════════════════════════ */
+    #app-screen { display: none; height: 100vh; overflow: hidden; }
 
-    .badge { padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-    .badge-blue { background: var(--sky-50); color: var(--sky-600); border: 1px solid #bae6fd; }
-    .badge-gray { background: var(--slate-100); color: var(--slate-500); border: 1px solid var(--slate-200); }
-    .badge-red { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-
-    .dias-badge { padding: 4px 10px; border-radius: var(--rad-sm); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
-    .dias-ok { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-    .dias-warn { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-    .dias-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-
-    /* LAYOUT BASE */
-    #app-screen { display: flex; height: 100vh; overflow: hidden; }
-    
     /* SIDEBAR */
-    #sidebar { width: 280px; background: white; border-right: 1px solid var(--slate-200); display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 40; }
-    .nav-item { padding: 14px 24px; color: var(--slate-500); font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 12px; border-left: 3px solid transparent; transition: all 0.2s; }
-    .nav-item:hover { background: var(--slate-50); color: var(--slate-800); }
-    .nav-item.active { background: var(--teal-50); color: var(--teal-700); border-left-color: var(--teal-600); }
-    .nav-icon { width: 20px; height: 20px; opacity: 0.7; }
-    .nav-item.active .nav-icon { opacity: 1; stroke: var(--teal-600); }
+    #sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+      background: var(--navy); display: flex; flex-direction: column;
+      z-index: 40; transition: transform 0.3s ease;
+    }
 
-    /* MAIN CONTENT */
-    main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
-    
+    .sidebar-header {
+      padding: 20px 22px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sidebar-logo-box {
+      width: 38px; height: 38px; background: rgba(255,255,255,0.12);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15);
+    }
+    .sidebar-logo-box img { width: 26px; height: auto; object-fit: contain; filter: brightness(10); }
+    .sidebar-brand h2 { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .sidebar-brand p  { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 500; margin-top: 1px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .sidebar-section { padding: 20px 14px 6px; }
+    .sidebar-section-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.8px; padding: 0 10px; margin-bottom: 4px; }
+
+    .nav-item {
+      padding: 10px 10px; color: rgba(255,255,255,0.6); font-weight: 500; font-size: 13px;
+      cursor: pointer; display: flex; align-items: center; gap: 11px;
+      border-radius: var(--rad-sm); margin-bottom: 2px; transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.12); font-weight: 600; }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.7; }
+    .nav-item.active svg { opacity: 1; }
+
+    .sidebar-footer {
+      margin-top: auto; padding: 16px 14px; border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-user {
+      display: flex; align-items: center; gap: 10px; padding: 10px;
+      border-radius: var(--rad-sm); cursor: pointer;
+      transition: background 0.15s;
+    }
+    .sidebar-user:hover { background: rgba(255,255,255,0.07); }
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      font-size: 13px; font-weight: 700; color: #fff; border: 1.5px solid rgba(255,255,255,0.2);
+    }
+    .user-info-name  { font-size: 12px; font-weight: 600; color: #fff; }
+    .user-info-nivel { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 1px; }
+    .sidebar-actions { display: flex; gap: 6px; padding: 0 10px; margin-top: 8px; }
+    .sidebar-action-btn {
+      flex: 1; padding: 7px 8px; background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: var(--rad-xs);
+      color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 600; cursor: pointer;
+      font-family: inherit; display: flex; align-items: center; justify-content: center;
+      gap: 5px; transition: all 0.15s;
+    }
+    .sidebar-action-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+
+    /* MAIN */
+    #main-content {
+      margin-left: var(--sidebar-w); height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+    }
+
     /* TOPBAR */
-    #topbar { height: 70px; min-height: 70px; background: white; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
-    
-    /* SCROLLABLE AREA */
-    #content-area { flex: 1; overflow-y: auto; padding: 30px; background: var(--slate-50); }
+    #topbar {
+      height: var(--topbar-h); min-height: var(--topbar-h); background: var(--surface);
+      border-bottom: 1px solid var(--border-l);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px; gap: 16px;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
+    .topbar-subtitle { font-size: 12px; color: var(--ink-3); margin-top: 1px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
 
-    /* MODAL */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: all 0.2s ease; z-index: 50; }
-    .modal-overlay.show { opacity: 1; pointer-events: auto; }
-    .modal-box { background: white; border-radius: var(--rad-lg); width: 100%; max-width: 500px; max-height: 90vh; display: flex; flex-direction: column; transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-    .modal-overlay.show .modal-box { transform: translateY(0); }
-    
-    .modal-header { padding: 24px; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; justify-content: space-between; }
-    .modal-body { padding: 24px; overflow-y: auto; }
-    .modal-footer { padding: 20px 24px; border-top: 1px solid var(--slate-200); background: var(--slate-50); border-radius: 0 0 var(--rad-lg) var(--rad-lg); display: flex; justify-content: flex-end; gap: 12px; }
+    .readonly-badge {
+      display: none; align-items: center; gap: 6px; padding: 5px 12px;
+      background: var(--amber-l); border: 1px solid #fde68a; border-radius: 999px;
+      font-size: 11px; font-weight: 700; color: var(--amber); text-transform: uppercase; letter-spacing: 0.5px;
+    }
 
-    .modal-large { max-width: 800px; }
-
-    /* TABS */
-    .tabs { display: flex; border-bottom: 1px solid var(--slate-200); gap: 24px; margin-bottom: 24px; }
-    .tab { padding: 12px 4px; font-size: 14px; font-weight: 600; color: var(--slate-500); cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
-    .tab:hover { color: var(--slate-800); }
-    .tab.active { color: var(--teal-600); border-bottom-color: var(--teal-600); }
-
-    /* TOAST */
-    #toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 9999; }
-    .toast { padding: 14px 20px; border-radius: var(--rad-sm); color: white; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); animation: slideIn 0.3s cubic-bezier(0.2, 1, 0.3, 1); }
-    .toast-success { background: #0f766e; }
-    .toast-error { background: #b91c1c; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-    /* MOBILE */
-    #menu-toggle { display: none; background: transparent; border: none; cursor: pointer; padding: 8px; }
+    #menu-toggle { display: none; background: transparent; border: none; cursor: pointer; padding: 6px; }
     .mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 30; display: none; }
     .mobile-overlay.show { display: block; }
-    
-    @media (max-width: 1024px) {
-      #sidebar { position: fixed; left: -280px; top: 0; bottom: 0; }
-      #sidebar.open { left: 0; }
-      #menu-toggle { display: block; }
-      #topbar { padding: 0 20px; }
-      #content-area { padding: 20px; }
+
+    /* CONTENT AREA */
+    #content-area { flex: 1; overflow-y: auto; padding: 24px 28px; background: var(--bg); }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ─ METRIC CARDS ─ */
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .metric-card {
+      background: var(--surface); border-radius: var(--rad-md); border: 1px solid var(--border-l);
+      padding: 20px; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden;
     }
+    .metric-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .metric-card.navy::after  { background: var(--navy); }
+    .metric-card.teal::after  { background: var(--teal); }
+    .metric-card.red::after   { background: var(--red); }
+    .metric-card.amber::after { background: var(--amber); }
+    .metric-label { font-size: 11px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.6px; }
+    .metric-value { font-size: 32px; font-weight: 700; color: var(--ink); letter-spacing: -1px; font-family: 'IBM Plex Mono', monospace; line-height: 1; }
+    .metric-sub   { font-size: 12px; color: var(--ink-3); }
+
+    /* ─ SECTION HEADERS ─ */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-title  { font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
+    .section-actions { display: flex; gap: 8px; align-items: center; }
+
+    /* ─ TABS ─ */
+    .tabs { display: flex; gap: 2px; margin-bottom: 20px; background: var(--bg); padding: 3px; border-radius: var(--rad-sm); width: fit-content; border: 1px solid var(--border-l); }
+    .tab { padding: 7px 16px; font-size: 12px; font-weight: 600; color: var(--ink-3); cursor: pointer; border-radius: var(--rad-xs); transition: 0.15s; }
+    .tab.active { background: #fff; color: var(--navy); box-shadow: var(--shadow-sm); }
+
+    /* ─ PACIENTES GRID ─ */
+    #lista-pacientes { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    
+    .pac-card { padding: 18px; display: flex; flex-direction: column; cursor: default; }
+    .pac-card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+    .pac-card-leito { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--navy); background: var(--navy-l); padding: 3px 8px; border-radius: var(--rad-xs); border: 1px solid #c2d0ef; white-space: nowrap; }
+    .pac-card-name { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 2px; line-height: 1.3; }
+    .pac-card-diag { font-size: 12px; color: var(--ink-3); margin-bottom: 12px; }
+    .pac-card-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; padding: 10px 0; border-top: 1px solid var(--border-l); border-bottom: 1px solid var(--border-l); }
+    .pac-meta-item span { font-size: 10px; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; display: block; }
+    .pac-meta-item strong { font-size: 12px; color: var(--ink); font-weight: 600; }
+    .pac-card-footer { display: flex; gap: 6px; margin-top: auto; }
+    .pac-card-alerts { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+
+    /* ─ TRANSFERÊNCIA ─ */
+    #sessao-transferencia { display: none; margin-bottom: 20px; }
+    .transfer-banner { background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1.5px solid #fde68a; border-radius: var(--rad-md); padding: 16px 20px; }
+    .transfer-banner h3 { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+    #lista-transferencia { display: flex; flex-direction: column; gap: 8px; }
+    .transfer-item { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 10px 14px; border-radius: var(--rad-sm); border: 1px solid #fde68a; }
+
+    /* ─ DASHBOARD CHARTS ─ */
+    .dash-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .inf-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-l); }
+    .inf-row:last-child { border-bottom: none; }
+    .inf-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .inf-bar-wrap { flex: 1; height: 6px; background: var(--bg); border-radius: 999px; overflow: hidden; }
+    .inf-bar { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+    .inf-name  { font-size: 12px; font-weight: 600; color: var(--ink-2); min-width: 130px; }
+    .inf-count { font-size: 13px; font-weight: 700; color: var(--ink); font-family: 'IBM Plex Mono', monospace; min-width: 24px; text-align: right; }
+
+    /* ─ TABLE (Setores/Usuários) ─ */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 11px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.6px; padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--border); text-align: left; }
+    .data-table td { padding: 12px 16px; border-bottom: 1px solid var(--border-l); font-size: 13px; color: var(--ink-2); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--navy-lx); }
+
+    /* ═══════════════════════════════════════════════════
+       MODAL
+    ═══════════════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(10,20,40,0.5);
+      backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 50; padding: 20px;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: auto; }
+    .modal-box {
+      background: #fff; border-radius: var(--rad-xl); width: 100%; max-width: 520px;
+      max-height: 90vh; display: flex; flex-direction: column;
+      transform: translateY(16px) scale(0.98);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: var(--shadow-lg);
+    }
+    .modal-overlay.show .modal-box { transform: translateY(0) scale(1); }
+    .modal-large { max-width: 780px; }
+    
+    .modal-header {
+      padding: 22px 24px 18px; border-bottom: 1px solid var(--border-l);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
+    .modal-header-sub   { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+    .modal-close {
+      width: 30px; height: 30px; border-radius: var(--rad-xs); border: 1px solid var(--border);
+      background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--ink-3); font-size: 16px; transition: 0.15s;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--ink); }
+    .modal-body   { padding: 22px 24px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 16px 24px; border-top: 1px solid var(--border-l);
+      display: flex; justify-content: flex-end; gap: 10px;
+      background: var(--bg); border-radius: 0 0 var(--rad-xl) var(--rad-xl);
+    }
+
+    /* FORM UTILS */
+    .form-row { display: flex; gap: 14px; margin-bottom: 14px; }
+    .form-row .form-group { flex: 1; }
+    .form-group { margin-bottom: 14px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-divider { height: 1px; background: var(--border-l); margin: 18px 0; }
+    .form-section-title { font-size: 11px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 14px; }
+
+    /* DETALHES DO PACIENTE */
+    .det-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .det-info-item span { font-size: 11px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 3px; }
+    .det-info-item strong { font-size: 13px; color: var(--ink); font-weight: 600; }
+
+    .proc-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-l); gap: 10px; }
+    .proc-item:last-child { border-bottom: none; }
+    .proc-tipo  { font-weight: 600; font-size: 13px; color: var(--ink); }
+    .proc-meta  { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+    .inf-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-l); }
+    .inf-item:last-child { border-bottom: none; }
+    .reg-item { background: var(--bg); padding: 10px 14px; border-radius: var(--rad-sm); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+
+    .det-section { margin-bottom: 24px; }
+    .det-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px solid var(--border-l); }
+    .det-section-title { font-size: 12px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.6px; }
+
+    /* TOAST */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; }
+    .toast {
+      padding: 12px 18px; border-radius: var(--rad-sm); font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-lg);
+      animation: toastIn 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+    }
+    .toast-success { background: #0A4F42; color: #fff; }
+    .toast-error   { background: #891b1b; color: #fff; }
+    .toast-info    { background: var(--navy); color: #fff; }
+    @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ─ EMPTY STATE ─ */
+    .empty-state { text-align: center; padding: 48px 20px; }
+    .empty-state svg { width: 48px; height: 48px; color: var(--border); margin-bottom: 12px; }
+    .empty-state h3 { font-size: 14px; font-weight: 600; color: var(--ink-3); margin-bottom: 4px; }
+    .empty-state p { font-size: 12px; color: var(--ink-3); }
+
+    /* ─ PRINT ─ */
+    @media print {
+      #sidebar, #topbar, #toast-container { display: none !important; }
+      #main-content { margin-left: 0 !important; }
+      #content-area { padding: 0 !important; overflow: visible !important; }
+    }
+
+    /* ─ RESPONSIVE ─ */
+    @media (max-width: 1024px) {
+      #sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
+      #sidebar.open { transform: translateX(0); }
+      #main-content { margin-left: 0; }
+      #menu-toggle { display: flex; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .dash-grid { grid-template-columns: 1fr; }
+      #topbar { padding: 0 16px; }
+      #content-area { padding: 16px; }
+    }
+    @media (max-width: 640px) {
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      #lista-pacientes { grid-template-columns: 1fr; }
+      .form-row { flex-direction: column; }
+      .modal-box { max-height: 95vh; border-radius: var(--rad-lg); }
+    }
+
+    /* scroll bar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
   </style>
 </head>
 <body>
 
-  <div id="login-screen" style="position:fixed;inset:0;background:var(--slate-50);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;">
-    <div style="background:white;padding:40px;border-radius:24px;box-shadow:0 20px 40px rgba(0,0,0,0.05);width:100%;max-width:420px;border:1px solid var(--slate-100)">
-      
-      <div style="text-align:center;margin-bottom:32px;">
-        <div style="width:72px;height:72px;background:white;border-radius:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 16px rgba(13,148,136,0.1); border: 1px solid var(--slate-100)">
-          <img src="/static/logoufal.png" alt="Logo Hospital" style="width:50px; height:auto; object-fit:contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-          <svg style="display:none; width:32px;height:32px;stroke:var(--teal-600);fill:none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+  <!-- ═══════════ LOGIN ═══════════ -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-logo-wrap">
+        <div class="login-logo-box">
+          <img src="/static/logoufal.png" alt="UFAL" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+          <svg style="display:none;width:26px;height:26px;fill:none;stroke:var(--navy);stroke-width:2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
-        <h1 style="font-size:24px;font-weight:700;color:var(--slate-800);letter-spacing:-0.5px">CCIH Workspace</h1>
-        <p style="color:var(--slate-500);font-size:14px;margin-top:4px">Rastreio e Controle de Infecções</p>
+        <div class="login-brand">
+          <h1>CCIH · UFAL</h1>
+          <p>Controle de Infecção Hospitalar</p>
+        </div>
       </div>
 
-      <div id="login-error" style="display:none; background:#fef2f2; color:#dc2626; padding:12px; border-radius:8px; font-size:13px; font-weight:600; margin-bottom:20px; text-align:center; border:1px solid #fecaca"></div>
+      <p class="login-form-title">Acesso ao sistema</p>
+      <div id="login-error" class="login-error"></div>
 
-      <div style="margin-bottom:20px;">
-        <div class="label">E-mail Profissional</div>
-        <input type="email" id="login-email" class="input-field" placeholder="voce@hospital.com"/>
+      <div class="login-field">
+        <label class="label">E-mail profissional</label>
+        <input type="email" id="login-email" class="input-field" placeholder="usuario@ccih.ufal.br" autocomplete="email"/>
       </div>
-      <div style="margin-bottom:30px;">
-        <div class="label">Senha</div>
-        <input type="password" id="login-senha" class="input-field" placeholder="••••••••"/>
+      <div class="login-field" style="margin-bottom:20px">
+        <label class="label">Senha</label>
+        <input type="password" id="login-senha" class="input-field" placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')App.login()"/>
       </div>
-      
-      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;border-radius:12px" onclick="App.login()">Acessar Sistema</button>
-      
-      <div style="text-align:center;margin-top:24px;font-size:12px;color:var(--slate-400)">
-        Protegido por criptografia de ponta a ponta.
+      <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="App.login()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Entrar no sistema
+      </button>
+
+      <div class="login-footer">
+        <span>UFAL · Hospital Universitário</span>
+        <div class="dot"></div>
+        <span>v3.0</span>
       </div>
     </div>
   </div>
 
-  <div id="app-screen" style="display:none;">
-    
-    <div id="mobile-overlay" class="mobile-overlay" onclick="App.toggleMenu(false)"></div>
+  <!-- ═══════════ APP ═══════════ -->
+  <div id="app-screen">
+
+    <!-- SIDEBAR -->
     <nav id="sidebar">
-      <div style="padding:24px; border-bottom:1px solid var(--slate-100); display:flex; align-items:center; gap:12px;">
-        <div style="width:40px;height:40px;background:var(--slate-50);border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid var(--slate-200)">
-          <img src="/static/logoufal.png" alt="Logo" style="width:24px; height:auto; object-fit:contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-          <svg style="display:none; width:20px;height:20px;stroke:var(--teal-600);fill:none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <div class="sidebar-header">
+        <div class="sidebar-logo-box">
+          <img src="/static/logoufal.png" alt="UFAL" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+          <svg style="display:none;width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
-        <div>
-          <div style="font-weight:700;font-size:15px;color:var(--slate-800)">CCIH</div>
-          <div style="font-size:11px;color:var(--slate-500);font-weight:600;letter-spacing:0.5px">SISTEMA GESTOR</div>
+        <div class="sidebar-brand">
+          <h2>CCIH Workspace</h2>
+          <p>Rastreio Hospitalar</p>
         </div>
       </div>
 
-      <div style="flex:1; padding:20px 0; overflow-y:auto; display:flex; flex-direction:column; gap:4px">
-        <div class="label" style="padding:0 24px;margin-bottom:10px;font-size:11px;color:var(--slate-400)">Navegação</div>
-        
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Principal</div>
         <div class="nav-item active" id="nav-dashboard" onclick="App.navigate('dashboard')">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
-          Dashboard
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Painel de Controle
         </div>
-        
         <div class="nav-item" id="nav-pacientes" onclick="App.navigate('pacientes')">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           Pacientes
         </div>
+      </div>
 
-        <div id="nav-admin-group" style="display:none; margin-top:20px">
-          <div class="label" style="padding:0 24px;margin-bottom:10px;font-size:11px;color:var(--slate-400)">Administração</div>
-          <div class="nav-item" id="nav-setores" onclick="App.navigate('setores')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            Setores
-          </div>
-          <div class="nav-item" id="nav-usuarios" onclick="App.navigate('usuarios')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            Usuários e Acessos
-          </div>
+      <div class="sidebar-section" id="nav-admin-group" style="display:none;">
+        <div class="sidebar-section-label">Administração</div>
+        <div class="nav-item" id="nav-setores" onclick="App.navigate('setores')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Setores / Alas
+        </div>
+        <div class="nav-item" id="nav-usuarios" onclick="App.navigate('usuarios')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Usuários
         </div>
       </div>
 
-      <div style="padding:20px 24px; border-top:1px solid var(--slate-100); background:var(--slate-50)">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-          <div style="width:36px;height:36px;border-radius:50%;background:var(--slate-200);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--slate-600);font-size:14px" id="nav-user-initial">U</div>
-          <div style="overflow:hidden">
-            <div id="nav-user-nome" style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Usuário</div>
-            <div id="nav-user-nivel" style="font-size:11px;color:var(--slate-500);font-weight:600">Nível</div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="user-avatar" id="nav-user-avatar">?</div>
+          <div style="flex:1;min-width:0">
+            <div class="user-info-name" id="nav-user-nome">—</div>
+            <div class="user-info-nivel" id="nav-user-nivel">—</div>
           </div>
         </div>
-        <button class="btn btn-ghost" style="width:100%;font-size:12px;padding:8px" onclick="App.openModalMudarSenha()">Mudar Senha</button>
-        <button class="btn btn-ghost" style="width:100%;font-size:12px;padding:8px;margin-top:8px;color:#dc2626;border-color:#fecaca" onclick="App.logout()">Sair</button>
+        <div class="sidebar-actions">
+          <button class="sidebar-action-btn" onclick="App.openModalMudarSenha()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Senha
+          </button>
+          <button class="sidebar-action-btn" onclick="App.logout()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sair
+          </button>
+        </div>
       </div>
     </nav>
 
-    <main>
+    <div class="mobile-overlay" id="mobile-overlay" onclick="App.toggleMenu(false)"></div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main-content">
+      <!-- TOPBAR -->
       <header id="topbar">
-        <div style="display:flex;align-items:center;gap:16px">
+        <div class="topbar-left">
           <button id="menu-toggle" onclick="App.toggleMenu()">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
-          
-          <div id="topbar-setor" style="display:none; align-items:center; gap:10px; background:var(--slate-100); padding:6px 12px; border-radius:var(--rad-sm)">
-            <span style="font-size:12px;font-weight:700;color:var(--slate-500)">MEU SETOR:</span>
-            <select id="topbar-setor-select" style="background:transparent;border:none;font-weight:700;color:var(--slate-800);font-size:14px;cursor:pointer;outline:none" onchange="App.mudarSetorGlobal()"></select>
+          <div>
+            <div class="topbar-title" id="topbar-title">Painel de Controle</div>
+            <div class="topbar-subtitle" id="topbar-subtitle">Visão geral do sistema</div>
           </div>
-          
-          <div id="readonly-badge" style="display:none; align-items:center; gap:6px" class="badge badge-red">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-            Modo Leitura
+        </div>
+        <div class="topbar-right">
+          <div class="readonly-badge" id="readonly-badge">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Somente leitura
           </div>
+          <button class="btn btn-ghost btn-sm write-only" id="btn-imprimir-relatorio" style="display:none" onclick="window.print()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir
+          </button>
         </div>
       </header>
 
+      <!-- CONTENT -->
       <div id="content-area">
-        
-        <div id="view-dashboard">
-          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:30px;flex-wrap:wrap;gap:16px">
+
+        <!-- ─── DASHBOARD ─── -->
+        <div id="view-dashboard" class="view active">
+          <div class="section-header" style="margin-bottom:20px">
             <div>
-              <h2 style="font-size:28px;font-weight:700;letter-spacing:-0.5px">Visão Geral</h2>
-              <p style="color:var(--slate-500);margin-top:4px">Métricas e taxas de infecção hospitalar</p>
+              <div class="section-title">Relatório de Infecções</div>
             </div>
-            <div style="display:flex;gap:12px;align-items:center">
-              <input type="month" id="filtro-mes" class="input-field" style="width:auto;font-weight:600" onchange="App.loadDashboard()"/>
-              <button class="btn btn-ghost" id="btn-imprimir-relatorio" style="display:none;" onclick="App.imprimirRelatorio()">🖨️ Relatório</button>
+            <div class="section-actions">
+              <input type="month" id="filtro-mes" class="input-field" style="width:160px" onchange="App.loadDashboard()"/>
             </div>
           </div>
 
-          <div class="grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:20px;margin-bottom:30px">
-            <div class="card" style="padding:24px">
-              <div class="label">Pacientes de Alta (Mês)</div>
-              <div style="font-size:36px;font-weight:700;color:var(--slate-800);line-height:1" id="dash-altas-mes">-</div>
+          <div class="metrics-grid">
+            <div class="metric-card navy">
+              <div class="metric-label">Internados Ativos</div>
+              <div class="metric-value" id="dash-tot-int">—</div>
+              <div class="metric-sub">Pacientes no momento</div>
             </div>
-            <div class="card" style="padding:24px; border-bottom:4px solid var(--teal-500)">
-              <div class="label">Total Infecções Notificadas</div>
-              <div style="font-size:36px;font-weight:700;color:var(--teal-600);line-height:1" id="dash-inf-mes">-</div>
+            <div class="metric-card teal">
+              <div class="metric-label">Altas no período</div>
+              <div class="metric-value" id="dash-altas-mes">—</div>
+              <div class="metric-sub">Pacientes com alta</div>
             </div>
-            <div class="card" style="padding:24px; background:var(--slate-800); color:white; border:none">
-              <div class="label" style="color:var(--slate-400)">Taxa Geral de Infecção</div>
-              <div style="font-size:36px;font-weight:700;line-height:1;display:flex;align-items:baseline;gap:4px">
-                <span id="dash-taxa-geral">-</span><span style="font-size:20px;color:var(--slate-400)">%</span>
-              </div>
+            <div class="metric-card red">
+              <div class="metric-label">Infecções no mês</div>
+              <div class="metric-value" id="dash-inf-mes">—</div>
+              <div class="metric-sub">Casos notificados</div>
+            </div>
+            <div class="metric-card amber">
+              <div class="metric-label">Taxa de Infecção</div>
+              <div class="metric-value" id="dash-taxa">—</div>
+              <div class="metric-sub">% sobre pacientes com alta</div>
             </div>
           </div>
 
-          <h3 style="font-size:18px;font-weight:700;margin-bottom:16px">Distribuição por Topografia</h3>
-          <div class="grid" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:20px">
+          <div class="dash-grid">
             <div class="card" style="padding:20px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                <div style="width:12px;height:12px;border-radius:3px;background:#3b82f6"></div>
-                <div style="font-weight:600;font-size:14px">Trato Urinário</div>
+              <div class="det-section-header" style="margin-bottom:16px">
+                <div class="det-section-title">Distribuição por tipo de infecção</div>
               </div>
-              <div style="font-size:24px;font-weight:700" id="dash-itu-qtd">-</div>
-              <div style="font-size:13px;color:var(--slate-500);margin-top:4px"><span id="dash-prop-itu" style="font-weight:700">-%</span> do total</div>
+              <div id="dash-inf-chart">
+                <div class="empty-state"><p>Carregando dados...</p></div>
+              </div>
             </div>
             <div class="card" style="padding:20px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                <div style="width:12px;height:12px;border-radius:3px;background:#ef4444"></div>
-                <div style="font-weight:600;font-size:14px">Sepse</div>
+              <div class="det-section-header" style="margin-bottom:16px">
+                <div class="det-section-title">Resumo do período</div>
               </div>
-              <div style="font-size:24px;font-weight:700" id="dash-sepse-qtd">-</div>
-              <div style="font-size:13px;color:var(--slate-500);margin-top:4px"><span id="dash-prop-sepse" style="font-weight:700">-%</span> do total</div>
-            </div>
-            <div class="card" style="padding:20px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                <div style="width:12px;height:12px;border-radius:3px;background:#f59e0b"></div>
-                <div style="font-weight:600;font-size:14px">Pneumonia</div>
+              <div id="dash-resumo">
+                <div class="empty-state"><p>Carregando...</p></div>
               </div>
-              <div style="font-size:24px;font-weight:700" id="dash-pneumo-qtd">-</div>
-              <div style="font-size:13px;color:var(--slate-500);margin-top:4px"><span id="dash-prop-pneumonia" style="font-weight:700">-%</span> do total</div>
-            </div>
-            <div class="card" style="padding:20px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                <div style="width:12px;height:12px;border-radius:3px;background:#8b5cf6"></div>
-                <div style="font-weight:600;font-size:14px">Ferida Operatória</div>
-              </div>
-              <div style="font-size:24px;font-weight:700" id="dash-cirur-qtd">-</div>
-              <div style="font-size:13px;color:var(--slate-500);margin-top:4px"><span id="dash-prop-cirurgica" style="font-weight:700">-%</span> do total</div>
             </div>
           </div>
         </div>
 
-        <div id="view-pacientes" style="display:none;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:16px">
-            <div>
-              <h2 style="font-size:28px;font-weight:700;letter-spacing:-0.5px">Pacientes</h2>
-              <p style="color:var(--slate-500);margin-top:4px">Gestão de internações e prontuários</p>
+        <!-- ─── PACIENTES ─── -->
+        <div id="view-pacientes" class="view">
+          <!-- Transferências pendentes -->
+          <div id="sessao-transferencia">
+            <div class="transfer-banner">
+              <h3>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Transferências aguardando confirmação
+              </h3>
+              <div id="lista-transferencia"></div>
             </div>
-            <button class="btn btn-primary write-only" onclick="App.openModalNovoPaciente()">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              Internar Paciente
-            </button>
           </div>
 
-          <div class="tabs">
-            <div class="tab active" id="tab-internados" onclick="App.setPacFilter('internado')">Internados Atualmente</div>
-            <div class="tab" id="tab-altas" onclick="App.setPacFilter('alta')">Histórico de Altas</div>
+          <div class="section-header">
+            <div>
+              <div class="section-title">Gestão de Pacientes</div>
+            </div>
+            <div class="section-actions">
+              <div class="tabs" style="margin-bottom:0">
+                <div class="tab active" id="tab-internados" onclick="App.setPacFilter('internado')">Internados</div>
+                <div class="tab" id="tab-altas" onclick="App.setPacFilter('alta')">Altas</div>
+              </div>
+              <button class="btn btn-primary btn-sm write-only" onclick="App.openModalNovoPaciente()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Novo Paciente
+              </button>
+            </div>
           </div>
 
-          <div id="sessao-transferencia" style="display:none; background:#fffbeb; border:1px solid #f59e0b; padding:15px; border-radius:12px; margin-top:20px">
-              <div style="font-weight:700; color:#b45309; margin-bottom:10px; display:flex; align-items:center; gap:8px"><span style="font-size:18px">🚚</span> Aguardando Recebimento neste Setor</div>
-              <div id="lista-transferencia" style="display:grid; gap:10px"></div>
+          <div id="lista-pacientes" style="margin-top:16px">
+            <div class="empty-state" style="grid-column:1/-1"><p>Carregando pacientes...</p></div>
           </div>
-          <div id="lista-pacientes" class="grid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;margin-top:20px"></div>
         </div>
 
-        <div id="view-setores" style="display:none; max-width:800px; margin:0 auto">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px">
-            <h2 style="font-size:24px;font-weight:700">Setores / Alas</h2>
-            <button class="btn btn-primary btn-sm" onclick="showModal('modal-setor')">Novo Setor</button>
+        <!-- ─── SETORES ─── -->
+        <div id="view-setores" class="view">
+          <div class="section-header">
+            <div class="section-title">Setores e Alas</div>
+            <div class="section-actions">
+              <button class="btn btn-primary btn-sm" onclick="App.openModal('modal-setor')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Adicionar Setor
+              </button>
+            </div>
           </div>
-          <div id="lista-setores" class="grid" style="grid-template-columns:1fr;gap:12px"></div>
+          <div class="card" style="margin-top:16px; overflow:hidden">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome do Setor</th>
+                  <th style="text-align:right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="lista-setores-tbody">
+                <tr><td colspan="3" style="text-align:center;padding:20px;color:var(--ink-3)">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div id="view-usuarios" style="display:none; max-width:800px; margin:0 auto">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px">
-            <div>
-              <h2 style="font-size:24px;font-weight:700">Usuários e Acessos</h2>
-              <p style="color:var(--slate-500);font-size:14px;margin-top:4px">Apenas Administradores podem gerenciar acessos.</p>
+        <!-- ─── USUÁRIOS ─── -->
+        <div id="view-usuarios" class="view">
+          <div class="section-header">
+            <div class="section-title">Usuários do Sistema</div>
+            <div class="section-actions">
+              <button class="btn btn-primary btn-sm" onclick="App.openModal('modal-user')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Novo Usuário
+              </button>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="showModal('modal-user')">Novo Usuário</button>
           </div>
-          <div id="lista-usuarios" class="grid" style="grid-template-columns:1fr;gap:12px"></div>
+          <div class="card" style="margin-top:16px; overflow:hidden">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Nível</th>
+                  <th>Setor</th>
+                  <th style="text-align:right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="lista-usuarios">
+                <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--ink-3)">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /content-area -->
+    </div><!-- /main-content -->
+  </div><!-- /app-screen -->
+
+  <!-- ═══════════ MODALS ═══════════ -->
+
+  <!-- DETALHES PACIENTE -->
+  <div id="modal-detalhes" class="modal-overlay">
+    <div class="modal-box modal-large">
+      <div class="modal-header">
+        <div>
+          <div class="modal-header-title" id="det-nome">—</div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <span class="badge badge-navy" id="det-badge-setor">—</span>
+            <span class="badge" id="det-badge-status">—</span>
+            <span id="det-badge-dias"></span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="App.closeModal('modal-detalhes')">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Info básica -->
+        <div class="det-section">
+          <div class="det-section-header">
+            <div class="det-section-title">Dados do Paciente</div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-xs write-only" id="btn-editar-pac-det" onclick="App.openEditPacienteFromDetail()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Editar
+              </button>
+              <button class="btn btn-ghost btn-xs write-only" id="btn-delete-paciente" style="display:none;color:var(--red);border-color:var(--red)" onclick="App.deletarPaciente()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                Excluir
+              </button>
+            </div>
+          </div>
+          <div class="det-info-grid" id="det-info-basica"></div>
+        </div>
+
+        <!-- Dispositivos -->
+        <div class="det-section">
+          <div class="det-section-header">
+            <div class="det-section-title">Dispositivos Invasivos</div>
+            <button class="btn btn-ghost btn-xs write-only" onclick="App.openModalProc()">+ Adicionar</button>
+          </div>
+          <div id="det-procedimentos"></div>
+        </div>
+
+        <!-- Infecções -->
+        <div class="det-section">
+          <div class="det-section-header">
+            <div class="det-section-title">Infecções Notificadas</div>
+            <button class="btn btn-ghost btn-xs write-only" onclick="App.openModalInf()">+ Notificar</button>
+          </div>
+          <div id="det-infeccoes"></div>
+        </div>
+
+        <!-- Registros -->
+        <div class="det-section">
+          <div class="det-section-header">
+            <div class="det-section-title">Registros Diários</div>
+            <button class="btn btn-ghost btn-xs write-only" onclick="App.openModalReg()">+ Registro</button>
+          </div>
+          <div id="det-registros"></div>
         </div>
 
       </div>
-    </main>
+      <div class="modal-footer" style="justify-content:space-between">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm write-only" id="btn-transferir" onclick="App.openModalTransferencia()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+            Transferir
+          </button>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="App.closeModal('modal-detalhes')">Fechar</button>
+          <button class="btn btn-danger btn-sm write-only" id="btn-alta-paciente" onclick="App.openModalAlta()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Dar Alta
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div id="toast-container"></div>
-
+  <!-- NOVO PACIENTE -->
   <div id="modal-novo-pac" class="modal-overlay">
     <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Internar Paciente</h3></div>
+      <div class="modal-header">
+        <div>
+          <div class="modal-header-title">Novo Paciente</div>
+          <div class="modal-header-sub">Preencha os dados de internação</div>
+        </div>
+        <button class="modal-close" onclick="App.closeModal('modal-novo-pac')">✕</button>
+      </div>
       <div class="modal-body">
-        
-        <div class="label">Nome Completo *</div>
-        <input type="text" id="pac-nome" class="input-field" style="margin-bottom:12px"/>
-        
-        <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1">
-            <div class="label">Idade *</div>
+        <div class="form-group">
+          <label class="label">Nome completo *</label>
+          <input type="text" id="pac-nome" class="input-field" placeholder="Nome do paciente"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Idade *</label>
             <input type="number" id="pac-idade" class="input-field" placeholder="Ex: 45"/>
           </div>
-          <div style="flex:1">
-            <div class="label">Prontuário (Nº) *</div>
-            <input type="text" id="pac-pront" class="input-field" placeholder="000000"/>
+          <div class="form-group">
+            <label class="label">Prontuário *</label>
+            <input type="text" id="pac-pront" class="input-field" placeholder="Ex: 000123"/>
           </div>
         </div>
-        
-        <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1">
-            <div class="label">Leito / Quarto</div>
-            <input type="text" id="pac-leito" class="input-field" placeholder="Ex: UTI-01"/>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Leito *</label>
+            <input type="text" id="pac-leito" class="input-field" placeholder="Ex: 12A"/>
           </div>
-          <div style="flex:1">
-            <div class="label">Telefone (Opcional)</div>
-            <input type="text" id="pac-fone" class="input-field" placeholder="(82) 90000-0000"/>
+          <div class="form-group">
+            <label class="label">Telefone</label>
+            <input type="text" id="pac-fone" class="input-field" placeholder="(82) 9 0000-0000"/>
           </div>
         </div>
-        <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1">
-            <div class="label">Data de Internação</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Data de Internação</label>
             <input type="date" id="pac-data-int" class="input-field"/>
           </div>
-          <div style="flex:1">
-            <div class="label">Diagnóstico</div>
-            <input type="text" id="pac-diag" class="input-field" placeholder="Ex: Sepse, Pneumonia..."/>
+          <div class="form-group" id="pac-setor-group">
+            <label class="label">Setor</label>
+            <select id="pac-setor" class="input-field"></select>
           </div>
         </div>
-
-        <div id="pac-setor-container" style="display:none; margin-bottom:12px">
-          <div class="label">Alocar no Setor *</div>
-          <select id="pac-setor" class="input-field"></select>
-          <div style="font-size:11px;color:var(--slate-400);margin-top:4px">Estagiários internam automaticamente em seu próprio setor.</div>
+        <div class="form-group">
+          <label class="label">Diagnóstico</label>
+          <input type="text" id="pac-diag" class="input-field" placeholder="Ex: Sepse, Pneumonia..."/>
         </div>
-
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-novo-pac')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarPaciente()">Confirmar Internação</button>
+        <button class="btn btn-primary" onclick="App.salvarPaciente()">Cadastrar Paciente</button>
       </div>
     </div>
   </div>
 
-  <div id="modal-detalhes" class="modal-overlay">
-    <div class="modal-box modal-large" style="height: 90vh;">
-      
-      <div class="modal-header" style="background:var(--slate-50); border-bottom:1px solid var(--slate-200); padding: 24px 30px">
-        <div>
-          <h3 id="det-nome" style="font-size:18px;font-weight:700;line-height:1.2"></h3>
-          <div style="margin-top:6px;display:flex;gap:8px">
-            <span id="det-badge-setor" class="badge badge-gray"></span>
-            <span id="det-badge-status" class="badge badge-blue"></span>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <button id="btn-transferir-paciente" class="btn btn-sm btn-ghost write-only" style="border:1px solid #0ea5e9; color:#0ea5e9;" onclick="App.openModalTransferencia()">🚚 Transferir</button>
-          <button id="btn-delete-paciente" class="btn btn-sm" style="background:#ef4444; color:white; display:none;" onclick="App.deletarPaciente()">🗑️ Apagar</button>
-          <button class="btn btn-ghost btn-sm" onclick="App.closeModal('modal-detalhes')">✕</button>
-        </div>
-      </div>
-
-      <div class="modal-body" style="padding:0; display:flex; flex-direction:column; overflow:hidden">
-        
-        <div style="padding:24px 30px; border-bottom:1px solid var(--slate-100); background:white">
-          <div class="label" style="margin-bottom:12px">Informações Cadastrais</div>
-          <div id="det-info-basica" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;font-size:14px"></div>
-          
-          <div style="margin-top:20px; display:flex; gap:12px">
-            <button class="btn btn-primary btn-sm write-only" id="btn-alta-paciente" onclick="App.openModalAlta()">Dar Alta</button>
-          </div>
-        </div>
-
-        <div style="padding: 24px 30px; background:var(--slate-50); flex:1; overflow-y:auto;">
-          
-          <div class="grid" style="grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px">
-            
-            <div class="card" style="padding:20px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--slate-100);padding-bottom:12px">
-                <h4 style="font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px">
-                  <div style="width:8px;height:8px;border-radius:50%;background:var(--teal-500)"></div>
-                  Dispositivos Invasivos
-                </h4>
-                <button class="btn btn-ghost btn-sm write-only" onclick="App.openModalProc()">+ Instalar</button>
-              </div>
-              <div id="det-procedimentos" style="display:flex;flex-direction:column;gap:8px"></div>
-            </div>
-
-            <div class="card" style="padding:20px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--slate-100);padding-bottom:12px">
-                <h4 style="font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px">
-                  <div style="width:8px;height:8px;border-radius:50%;background:#ef4444"></div>
-                  Infecções Detectadas
-                </h4>
-                <button class="btn btn-ghost btn-sm write-only" onclick="App.openModalInf()">+ Notificar</button>
-              </div>
-              <div id="det-infeccoes" style="display:flex;flex-direction:column;gap:8px"></div>
-            </div>
-          </div>
-
-          <div class="card" style="padding:20px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--slate-100);padding-bottom:12px">
-              <h4 style="font-weight:700;font-size:15px">Registros Diários (Temperatura)</h4>
-              <button class="btn btn-ghost btn-sm write-only" onclick="App.openModalReg()">+ Novo Registro</button>
-            </div>
-            <div id="det-registros" style="display:flex;flex-direction:column;gap:8px"></div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-proc" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Instalar Dispositivo Invasivo</h3></div>
-      <div class="modal-body">
-        <div class="label">Selecione o Dispositivo/Procedimento</div>
-        <select id="proc-tipo" class="input-field" style="margin-bottom:16px" onchange="App.toggleOutrosProcedimento()">
-            <option value="Cateter Venoso Central (CVC)">Cateter Venoso Central (CVC)</option>
-            <option value="Acesso Venoso Periférico (PVP)">Acesso Venoso Periférico (PVP)</option>
-            <option value="Sonda Vesical de Demora (SVD)">Sonda Vesical de Demora (SVD)</option>
-            <option value="Sonda Nasoenteral (SNE)">Sonda Nasoenteral (SNE)</option>
-            <option value="Ventilação Mecânica (VM)">Ventilação Mecânica (VM)</option>
-            <option value="Outros">Outros...</option>
-        </select>
-        <input type="text" id="proc-outros" class="input-field" style="display:none; margin-bottom:16px;" placeholder="Digite o nome do dispositivo...">
-        <div class="label">Data da Inserção</div>
-        <input type="date" id="proc-data" class="input-field"/>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-proc')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarProc()">Salvar Instalação</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-rm-proc" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Remover Dispositivo</h3></div>
-      <div class="modal-body">
-        <div class="label">Data da Remoção</div>
-        <input type="date" id="proc-data-remocao" class="input-field"/>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-rm-proc')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.removerProc()">Confirmar Remoção</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-inf" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Notificar Infecção</h3></div>
-      <div class="modal-body">
-        <div class="label">Topografia da Infecção</div>
-        <select id="inf-tipo" class="input-field" style="margin-bottom:16px">
-          <option value="Trato Urinário">Trato Urinário</option>
-          <option value="Sepse">Sepse</option>
-          <option value="Pneumonia">Pneumonia</option>
-          <option value="Ferida Operatória">Ferida Operatória</option>
-          <option value="Outra">Outra</option>
-        </select>
-        <div class="label">Data de Detecção / Notificação</div>
-        <input type="date" id="inf-data" class="input-field"/>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-inf')">Cancelar</button>
-        <button class="btn btn-primary" style="background:#ef4444" onclick="App.salvarInf()">Notificar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-reg" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Registro Diário</h3></div>
-      <div class="modal-body">
-        <div style="display:flex;gap:12px">
-          <div style="flex:1">
-            <div class="label">Data</div>
-            <input type="date" id="reg-data" class="input-field"/>
-          </div>
-          <div style="flex:1">
-            <div class="label">Pico de Temperatura (°C)</div>
-            <input type="number" step="0.1" id="reg-temp" class="input-field" placeholder="Ex: 38.5"/>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-reg')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarReg()">Salvar Registro</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-alta" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Registrar Saída / Alta</h3></div>
-      <div class="modal-body">
-        <p style="margin-bottom:16px; font-size:14px; color:var(--slate-500)">Atenção: Ao dar alta, todos os dispositivos invasivos ativos serão marcados como removidos na data de hoje.</p>
-        <div class="label">Motivo da Saída</div>
-        <select id="alta-motivo" class="input-field"></select>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-alta')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.confirmarAlta()">Confirmar Saída</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-setor" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Adicionar Setor</h3></div>
-      <div class="modal-body">
-        <div class="label">Nome do Setor</div>
-        <input type="text" id="setor-nome" class="input-field" placeholder="Ex: UTI Pediátrica"/>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-setor')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarSetor()">Salvar</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-user" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Novo Usuário</h3></div>
-      <div class="modal-body">
-        <div class="label">Nome</div>
-        <input type="text" id="user-nome" class="input-field" style="margin-bottom:12px"/>
-        
-        <div class="label">E-mail</div>
-        <input type="email" id="user-email" class="input-field" style="margin-bottom:12px"/>
-        
-        <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1">
-            <div class="label">Nível de Acesso</div>
-            <select id="user-nivel" class="input-field" onchange="document.getElementById('user-setor-wrap').style.display = this.value==='estagiario'?'block':'none'">
-              <option value="estagiario">Estagiário (Específico)</option>
-              <option value="admin">Administrador (Total)</option>
-              <option value="espectador">Espectador (Leitura)</option>
-            </select>
-          </div>
-          <div style="flex:1" id="user-setor-wrap">
-            <div class="label">Setor / Ala</div>
-            <select id="user-setor" class="input-field"></select>
-          </div>
-        </div>
-        
-        <div class="label">Senha Inicial</div>
-        <input type="password" id="user-senha" class="input-field"/>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-user')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarUsuario()">Criar Usuário</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-mudar-senha" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Mudar Senha</h3></div>
-      <div class="modal-body">
-        <div class="label">Senha Atual</div>
-        <input type="password" id="senha-atual" class="input-field" style="margin-bottom:12px"/>
-        <div class="label">Nova Senha (Mínimo 6 caracteres)</div>
-        <input type="password" id="senha-nova" class="input-field"/>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-mudar-senha')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarNovaSenha()">Atualizar Senha</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- EDITAR PACIENTE -->
   <div id="modal-edit-pac" class="modal-overlay">
     <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Editar Paciente</h3></div>
+      <div class="modal-header">
+        <div><div class="modal-header-title">Editar Paciente</div></div>
+        <button class="modal-close" onclick="App.closeModal('modal-edit-pac')">✕</button>
+      </div>
       <div class="modal-body">
-        <div class="label">Nome Completo</div>
-        <input type="text" id="edit-pac-nome" class="input-field" style="margin-bottom:12px"/>
-        <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1"><div class="label">Idade</div><input type="number" id="edit-pac-idade" class="input-field"/></div>
-          <div style="flex:1"><div class="label">Prontuário</div><input type="text" id="edit-pac-pront" class="input-field"/></div>
+        <div class="form-group">
+          <label class="label">Nome completo *</label>
+          <input type="text" id="edit-pac-nome" class="input-field"/>
         </div>
-        <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1"><div class="label">Leito</div><input type="text" id="edit-pac-leito" class="input-field"/></div>
-          <div style="flex:1"><div class="label">Telefone</div><input type="text" id="edit-pac-fone" class="input-field"/></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Idade</label>
+            <input type="number" id="edit-pac-idade" class="input-field"/>
+          </div>
+          <div class="form-group">
+            <label class="label">Prontuário</label>
+            <input type="text" id="edit-pac-pront" class="input-field"/>
+          </div>
         </div>
-        <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1"><div class="label">Data de Internação</div><input type="date" id="edit-pac-data" class="input-field"/></div>
-          <div style="flex:1"><div class="label">Diagnóstico</div><input type="text" id="edit-pac-diag" class="input-field"/></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Leito</label>
+            <input type="text" id="edit-pac-leito" class="input-field"/>
+          </div>
+          <div class="form-group">
+            <label class="label">Telefone</label>
+            <input type="text" id="edit-pac-fone" class="input-field"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Data de Internação</label>
+            <input type="date" id="edit-pac-data" class="input-field"/>
+          </div>
+          <div class="form-group">
+            <label class="label">Diagnóstico</label>
+            <input type="text" id="edit-pac-diag" class="input-field"/>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -649,13 +898,242 @@
     </div>
   </div>
 
+  <!-- PROCEDIMENTO -->
+  <div id="modal-proc" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div><div class="modal-header-title">Registrar Dispositivo Invasivo</div></div>
+        <button class="modal-close" onclick="App.closeModal('modal-proc')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="label">Tipo de Dispositivo *</label>
+          <select id="proc-tipo" class="input-field" onchange="App.toggleOutrosProcedimento()">
+            <option>Cateter Venoso Central (CVC)</option>
+            <option>Cateter Vesical de Demora (CVD)</option>
+            <option>Ventilação Mecânica (VM)</option>
+            <option>Cateter Arterial</option>
+            <option>Dreno Torácico</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="form-group" id="proc-outros" style="display:none">
+          <label class="label">Especificar dispositivo</label>
+          <input type="text" id="proc-outros-val" class="input-field" placeholder="Descreva o dispositivo..."/>
+        </div>
+        <div class="form-group">
+          <label class="label">Data de Inserção *</label>
+          <input type="date" id="proc-data" class="input-field"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-proc')">Cancelar</button>
+        <button class="btn btn-primary" onclick="App.salvarProc()">Registrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REMOVER PROCEDIMENTO -->
+  <div id="modal-rm-proc" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div><div class="modal-header-title">Remover Dispositivo</div></div>
+        <button class="modal-close" onclick="App.closeModal('modal-rm-proc')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--ink-3);margin-bottom:14px">Informe a data de remoção do dispositivo invasivo.</p>
+        <div class="form-group">
+          <label class="label">Data de Remoção *</label>
+          <input type="date" id="proc-data-remocao" class="input-field"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-rm-proc')">Cancelar</button>
+        <button class="btn btn-danger" onclick="App.removerProc()">Confirmar Remoção</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFECÇÃO -->
+  <div id="modal-inf" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div><div class="modal-header-title">Notificar Infecção</div></div>
+        <button class="modal-close" onclick="App.closeModal('modal-inf')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="label">Tipo de Infecção *</label>
+          <select id="inf-tipo" class="input-field">
+            <option>Trato Urinario</option>
+            <option>Sepse</option>
+            <option>Pneumonia</option>
+            <option>Ferida Operatoria</option>
+            <option>Outra</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="label">Data da Notificação *</label>
+          <input type="date" id="inf-data" class="input-field"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-inf')">Cancelar</button>
+        <button class="btn btn-danger" onclick="App.salvarInf()">Notificar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTRO DIÁRIO -->
+  <div id="modal-reg" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div><div class="modal-header-title">Registro Diário</div></div>
+        <button class="modal-close" onclick="App.closeModal('modal-reg')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Data *</label>
+            <input type="date" id="reg-data" class="input-field"/>
+          </div>
+          <div class="form-group">
+            <label class="label">Temperatura (°C)</label>
+            <input type="number" step="0.1" id="reg-temp" class="input-field" placeholder="Ex: 38.5"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-reg')">Cancelar</button>
+        <button class="btn btn-primary" onclick="App.salvarReg()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALTA -->
+  <div id="modal-alta" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <div class="modal-header-title">Registrar Alta do Paciente</div>
+          <div class="modal-header-sub">Os dispositivos ativos serão marcados como removidos</div>
+        </div>
+        <button class="modal-close" onclick="App.closeModal('modal-alta')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="label">Motivo da Saída *</label>
+          <select id="alta-motivo" class="input-field"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-alta')">Cancelar</button>
+        <button class="btn btn-danger" onclick="App.confirmarAlta()">Confirmar Alta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETOR -->
+  <div id="modal-setor" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div><div class="modal-header-title">Adicionar Setor / Ala</div></div>
+        <button class="modal-close" onclick="App.closeModal('modal-setor')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="label">Nome do Setor *</label>
+          <input type="text" id="setor-nome" class="input-field" placeholder="Ex: UTI Pediátrica" onkeydown="if(event.key==='Enter')App.salvarSetor()"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-setor')">Cancelar</button>
+        <button class="btn btn-primary" onclick="App.salvarSetor()">Criar Setor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- USUÁRIO -->
+  <div id="modal-user" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div><div class="modal-header-title">Novo Usuário</div></div>
+        <button class="modal-close" onclick="App.closeModal('modal-user')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="label">Nome *</label>
+          <input type="text" id="user-nome" class="input-field"/>
+        </div>
+        <div class="form-group">
+          <label class="label">E-mail *</label>
+          <input type="email" id="user-email" class="input-field"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="label">Nível de Acesso *</label>
+            <select id="user-nivel" class="input-field" onchange="document.getElementById('user-setor-wrap').style.display=this.value==='estagiario'?'block':'none'">
+              <option value="estagiario">Estagiário</option>
+              <option value="admin">Administrador</option>
+              <option value="espectador">Espectador</option>
+            </select>
+          </div>
+          <div class="form-group" id="user-setor-wrap">
+            <label class="label">Setor</label>
+            <select id="user-setor" class="input-field"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="label">Senha inicial *</label>
+          <input type="password" id="user-senha" class="input-field" placeholder="Mínimo 6 caracteres"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-user')">Cancelar</button>
+        <button class="btn btn-primary" onclick="App.salvarUsuario()">Criar Usuário</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MUDAR SENHA -->
+  <div id="modal-mudar-senha" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div><div class="modal-header-title">Alterar Senha</div></div>
+        <button class="modal-close" onclick="App.closeModal('modal-mudar-senha')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="label">Senha Atual *</label>
+          <input type="password" id="senha-atual" class="input-field"/>
+        </div>
+        <div class="form-group">
+          <label class="label">Nova Senha * (mín. 6 caracteres)</label>
+          <input type="password" id="senha-nova" class="input-field"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-mudar-senha')">Cancelar</button>
+        <button class="btn btn-primary" onclick="App.salvarNovaSenha()">Atualizar Senha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSFERÊNCIA -->
   <div id="modal-transferencia" class="modal-overlay">
     <div class="modal-box">
-      <div class="modal-header"><h3 style="font-size:18px;font-weight:700">Transferir Paciente</h3></div>
+      <div class="modal-header">
+        <div>
+          <div class="modal-header-title">Solicitar Transferência</div>
+          <div class="modal-header-sub">O paciente ficará pendente no setor de destino</div>
+        </div>
+        <button class="modal-close" onclick="App.closeModal('modal-transferencia')">✕</button>
+      </div>
       <div class="modal-body">
-        <p style="margin-bottom:15px; font-size: 14px; color: var(--slate-500)">O paciente ficará aguardando recebimento no setor de destino.</p>
-        <div class="label">Setor de Destino</div>
-        <select id="transf-setor" class="input-field"></select>
+        <div class="form-group">
+          <label class="label">Setor de Destino *</label>
+          <select id="transf-setor" class="input-field"></select>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-transferencia')">Cancelar</button>
@@ -663,6 +1141,9 @@
       </div>
     </div>
   </div>
+
+  <!-- TOAST -->
+  <div id="toast-container"></div>
 
   <script src="/static/script.js"></script>
 </body>
