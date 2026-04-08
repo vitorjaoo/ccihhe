@@ -49,14 +49,8 @@ class TursoCursor:
 
 
 class TursoAdapter:
-    def __init__(self):
-        print(f"[DB] URL={TURSO_URL[:40]}... TOKEN={'sim' if TURSO_TOKEN else 'NAO'}")
-        if TURSO_URL.startswith("file:"):
-            self.client = libsql_client.create_client_sync(url=TURSO_URL)
-        else:
-            if not TURSO_TOKEN:
-                raise Exception("TURSO_TOKEN nao configurado!")
-            self.client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
+    def __init__(self, client):
+        self.client = client
 
     def cursor(self):
         return self
@@ -64,8 +58,21 @@ class TursoAdapter:
     def execute(self, sql, params=()):
         if not isinstance(params, (tuple, list)):
             params = (params,)
-        rs = self.client.execute(sql, params)
-        return TursoCursor(rs)
+        try:
+            rs = self.client.execute(sql, params)
+            return TursoCursor(rs)
+        except Exception as e:
+            print(f"[DB] execute error: {e} | SQL: {sql[:80]}")
+            # Tenta reconectar uma vez se o cliente caiu
+            global _db_client
+            try:
+                _db_client = _create_client()
+                self.client = _db_client
+                rs = self.client.execute(sql, params)
+                return TursoCursor(rs)
+            except Exception as e2:
+                print(f"[DB] reconnect failed: {e2}")
+                raise e2
 
     def executescript(self, sql_script):
         statements = [s.strip() for s in sql_script.split(';') if s.strip()]
@@ -79,11 +86,30 @@ class TursoAdapter:
         pass
 
     def close(self):
-        self.client.close()
+        pass  # nao fecha — cliente e singleton reutilizado
+
+
+def _create_client():
+    # Converte libsql:// para https:// para evitar WebSocket (bloqueado no Render)
+    url = TURSO_URL
+    if url.startswith("libsql://"):
+        url = url.replace("libsql://", "https://", 1)
+    print(f"[DB] Criando cliente Turso — URL={url[:40]}...")
+    if url.startswith("file:"):
+        return libsql_client.create_client_sync(url=url)
+    if not TURSO_TOKEN:
+        raise Exception("TURSO_TOKEN nao configurado!")
+    return libsql_client.create_client_sync(url=url, auth_token=TURSO_TOKEN)
+
+
+_db_client = None
 
 
 def get_db():
-    return TursoAdapter()
+    global _db_client
+    if _db_client is None:
+        _db_client = _create_client()
+    return TursoAdapter(_db_client)
 
 
 def hash_password(pw: str) -> str:
@@ -167,9 +193,13 @@ def login():
     senha = data.get('senha', '')
     if not email or not senha:
         return jsonify({'error': 'Campos obrigatorios'}), 400
-    conn = get_db()
-    user = conn.execute("SELECT * FROM usuarios WHERE email=?", (email,)).fetchone()
-    conn.close()
+    try:
+        conn = get_db()
+        user = conn.execute("SELECT * FROM usuarios WHERE email=?", (email,)).fetchone()
+        conn.close()
+    except Exception as e:
+        print(f"[LOGIN] erro DB: {e}")
+        return jsonify({'error': 'Erro de conexao com banco de dados'}), 500
     if not user or user['senha'] != hash_password(senha):
         return jsonify({'error': 'Credenciais invalidas'}), 401
     session['user_id'] = user['id']
@@ -217,10 +247,14 @@ def change_password():
 @app.route('/api/setores', methods=['GET'])
 @login_required
 def get_setores():
-    conn = get_db()
-    rows = conn.execute("SELECT * FROM setores ORDER BY nome").fetchall()
-    conn.close()
-    return jsonify(rows)
+    try:
+        conn = get_db()
+        rows = conn.execute("SELECT * FROM setores ORDER BY nome").fetchall()
+        conn.close()
+        return jsonify(rows)
+    except Exception as e:
+        print(f"[SETORES] erro: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/setores', methods=['POST'])
@@ -644,12 +678,17 @@ def get_paciente_detalhes(pid):
 
 
 
+@app.route('/api/motivos_saida', methods=['GET'])
 @login_required
 def get_motivos():
-    conn = get_db()
-    rows = conn.execute("SELECT * FROM motivos_saida ORDER BY nome").fetchall()
-    conn.close()
-    return jsonify(rows)
+    try:
+        conn = get_db()
+        rows = conn.execute("SELECT * FROM motivos_saida ORDER BY nome").fetchall()
+        conn.close()
+        return jsonify(rows)
+    except Exception as e:
+        print(f"[MOTIVOS] erro: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 # ---------------------------------------------------------------------------
