@@ -562,8 +562,8 @@ const App = {
       
       const d = data.detalhes;
       if (d) {
-        document.getElementById('dash-itu-qtd').textContent = d['Trato Urinario']?.qtd || 0;
-        document.getElementById('dash-prop-itu').textContent = (d['Trato Urinario']?.prop || 0) + '%';
+        document.getElementById('dash-itu-qtd').textContent = d['Trato Urinário']?.qtd || 0;
+        document.getElementById('dash-prop-itu').textContent = (d['Trato Urinário']?.prop || 0) + '%';
         
         document.getElementById('dash-sepse-qtd').textContent = d['Sepse']?.qtd || 0;
         document.getElementById('dash-prop-sepse').textContent = (d['Sepse']?.prop || 0) + '%';
@@ -571,8 +571,11 @@ const App = {
         document.getElementById('dash-pneumo-qtd').textContent = d['Pneumonia']?.qtd || 0;
         document.getElementById('dash-prop-pneumonia').textContent = (d['Pneumonia']?.prop || 0) + '%';
         
-        document.getElementById('dash-cirur-qtd').textContent = d['Ferida Operatoria']?.qtd || 0;
-        document.getElementById('dash-prop-cirurgica').textContent = (d['Ferida Operatoria']?.prop || 0) + '%';
+        document.getElementById('dash-cirur-qtd').textContent = d['Ferida Operatória']?.qtd || 0;
+        document.getElementById('dash-prop-cirurgica').textContent = (d['Ferida Operatória']?.prop || 0) + '%';
+
+        document.getElementById('dash-outra-qtd').textContent = d['Outra']?.qtd || 0;
+        document.getElementById('dash-prop-outra').textContent = (d['Outra']?.prop || 0) + '%';
       }
     } catch (e) { toast('Erro ao carregar métricas', 'error'); }
   },
@@ -661,6 +664,8 @@ const App = {
     document.getElementById('senha-nova').value = '';
     showModal('modal-mudar-senha');
   },
+
+  closeModal(id) { closeModal(id); },
 
   async salvarNovaSenha() {
     const atual = document.getElementById('senha-atual').value;
