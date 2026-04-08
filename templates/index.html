@@ -18,76 +18,25 @@
       --slate-900: #0f172a;
     }
     * { box-sizing: border-box; }
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: #f0fdfa;
-      color: var(--slate-800);
-      min-height: 100vh;
-    }
-    /* ===== TOGGLE SWITCH ===== */
-    .toggle-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-    .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-slider {
-      position: absolute; inset: 0; background: var(--slate-300);
-      border-radius: 24px; transition: .25s;
-    }
-    .toggle-slider:before {
-      content: ''; position: absolute; height: 18px; width: 18px;
-      left: 3px; bottom: 3px; background: white; border-radius: 50%;
-      transition: .25s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
-    }
-    input:checked + .toggle-slider { background: var(--teal-500); }
-    input:checked + .toggle-slider:before { transform: translateX(20px); }
-    /* ===== SIDEBAR ===== */
+    body { font-family: 'DM Sans', sans-serif; background: #f0fdfa; color: var(--slate-800); min-height: 100vh; }
     #sidebar {
       position: fixed; left: 0; top: 0; height: 100vh; width: 240px;
-      background: var(--slate-900); z-index: 40;
-      display: flex; flex-direction: column;
+      background: var(--slate-900); z-index: 40; display: flex; flex-direction: column;
       transform: translateX(-100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
     }
     #sidebar.open { transform: translateX(0); }
-    @media (min-width: 1024px) {
-      #sidebar { transform: translateX(0); }
-      #main-content { margin-left: 240px; }
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 20px; color: var(--slate-400);
-      cursor: pointer; transition: all .2s; border-left: 3px solid transparent;
-      font-weight: 500; font-size: 14px;
-    }
+    @media (min-width: 1024px) { #sidebar { transform: translateX(0); } #main-content { margin-left: 240px; } }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: var(--slate-400); cursor: pointer; transition: all .2s; border-left: 3px solid transparent; font-weight: 500; font-size: 14px; }
     .nav-item:hover { color: white; background: rgba(255,255,255,.05); }
     .nav-item.active { color: var(--teal-400); border-left-color: var(--teal-400); background: rgba(20,184,166,.08); }
     .nav-icon { font-size: 18px; width: 22px; text-align: center; }
-    /* ===== CARDS ===== */
-    .card {
-      background: white; border-radius: 16px;
-      box-shadow: 0 2px 12px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
-      border: 1px solid var(--slate-100);
-    }
-    .metric-card {
-      background: white; border-radius: 14px; padding: 20px;
-      box-shadow: 0 2px 12px rgba(15,23,42,.07);
-      border: 1px solid var(--slate-100);
-      transition: transform .2s, box-shadow .2s;
-    }
+    .card { background: white; border-radius: 16px; box-shadow: 0 2px 12px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04); border: 1px solid var(--slate-100); }
+    .metric-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(15,23,42,.07); border: 1px solid var(--slate-100); transition: transform .2s, box-shadow .2s; }
     .metric-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,.1); }
-    /* ===== INPUTS ===== */
-    .input-field {
-      width: 100%; padding: 10px 14px; border: 1.5px solid var(--slate-200);
-      border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px;
-      background: var(--slate-50); color: var(--slate-800); transition: border-color .2s, box-shadow .2s;
-      outline: none;
-    }
+    .input-field { width: 100%; padding: 10px 14px; border: 1.5px solid var(--slate-200); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--slate-50); color: var(--slate-800); transition: border-color .2s, box-shadow .2s; outline: none; }
     .input-field:focus { border-color: var(--teal-400); box-shadow: 0 0 0 3px rgba(20,184,166,.12); background: white; }
     .label { font-size: 12px; font-weight: 600; color: var(--slate-500); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
-    /* ===== BUTTONS ===== */
-    .btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 13.5px;
-      cursor: pointer; transition: all .2s; border: none; outline: none;
-    }
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 13.5px; cursor: pointer; transition: all .2s; border: none; outline: none; }
     .btn-primary { background: var(--teal-500); color: white; }
     .btn-primary:hover { background: var(--teal-600); box-shadow: 0 4px 12px rgba(20,184,166,.3); }
     .btn-danger { background: #ef4444; color: white; }
@@ -97,7 +46,6 @@
     .btn-warning { background: #f59e0b; color: white; }
     .btn-warning:hover { background: #d97706; }
     .btn-sm { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
-    /* ===== BADGES ===== */
     .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
     .badge-green { background: #dcfce7; color: #166534; }
     .badge-red { background: #fee2e2; color: #991b1b; }
@@ -105,74 +53,51 @@
     .badge-blue { background: #dbeafe; color: #1e40af; }
     .badge-gray { background: var(--slate-100); color: var(--slate-600); }
     .badge-teal { background: var(--teal-100); color: var(--teal-700); }
-    /* ===== MODAL ===== */
-    .modal-overlay {
-      position: fixed; inset: 0; background: rgba(15,23,42,.55);
-      backdrop-filter: blur(4px); z-index: 100;
-      display: none; align-items: center; justify-content: center; padding: 20px;
-    }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(4px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
     .modal-overlay.show { display: flex; }
-    .modal-box { background: white; border-radius: 18px; width: 100%; max-width: 480px; overflow: hidden;
-      box-shadow: 0 24px 60px rgba(15,23,42,.2); animation: slideUp .25s ease; }
+    .modal-box { background: white; border-radius: 18px; width: 100%; max-width: 480px; overflow: hidden; box-shadow: 0 24px 60px rgba(15,23,42,.2); animation: slideUp .25s ease; max-height: 90vh; overflow-y: auto; }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--slate-100); }
     .modal-body { padding: 24px; }
     .modal-footer { padding: 16px 24px; border-top: 1px solid var(--slate-100); display: flex; gap: 10px; justify-content: flex-end; }
-    /* ===== SIDEBAR OVERLAY ===== */
-    #sidebar-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 39;
-    }
+    #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 39; }
     #sidebar-overlay.show { display: block; }
-    /* ===== TOAST ===== */
     #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
-    .toast {
-      padding: 14px 18px; border-radius: 12px; color: white; font-size: 14px; font-weight: 500;
-      box-shadow: 0 8px 24px rgba(0,0,0,.2); animation: toastIn .3s ease; max-width: 320px;
-    }
+    .toast { padding: 14px 18px; border-radius: 12px; color: white; font-size: 14px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,.2); animation: toastIn .3s ease; max-width: 320px; }
     .toast-success { background: var(--teal-600); }
     .toast-error { background: #ef4444; }
     @keyframes toastIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    /* ===== DIAS BADGE ===== */
     .dias-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; font-family: 'DM Mono', monospace; }
     .dias-ok { background: #dcfce7; color: #166534; }
     .dias-warn { background: #fef9c3; color: #713f12; }
     .dias-danger { background: #fee2e2; color: #991b1b; }
-    /* ===== PROC CARD ===== */
     .proc-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--slate-50); border-radius: 10px; border: 1px solid var(--slate-100); margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
     .proc-item-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    /* ===== SCROLLBAR ===== */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 10px; }
-    /* ===== SECTION HEADER ===== */
     .section-title { font-size: 20px; font-weight: 700; color: var(--slate-800); }
     .section-sub { font-size: 13px; color: var(--slate-400); margin-top: 2px; }
-    /* ===== LOGIN ===== */
-    #login-screen {
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, var(--teal-700) 0%, var(--slate-800) 100%);
-    }
+    #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--teal-700) 0%, var(--slate-800) 100%); }
     .login-card { background: white; border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
-    /* ===== TABLE ===== */
     .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
     .tbl th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--slate-400); border-bottom: 1px solid var(--slate-100); }
     .tbl td { padding: 12px 14px; border-bottom: 1px solid var(--slate-50); vertical-align: middle; }
     .tbl tbody tr:hover { background: var(--slate-50); }
     .tbl tbody tr:last-child td { border-bottom: none; }
-    /* ===== PROGRESS BAR ===== */
     .progress-bar { height: 6px; background: var(--slate-100); border-radius: 10px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--teal-500); border-radius: 10px; }
-    @media (max-width: 768px) {
-      .hide-mobile { display: none !important; }
-    }
+    @media (max-width: 768px) { .hide-mobile { display: none !important; } }
   </style>
 </head>
 <body>
 
+  <!-- LOGIN -->
   <div id="login-screen">
     <div class="login-card">
       <div style="text-align:center;margin-bottom:30px">
-       <img src="/static/logoufal.png" alt="" style="display: block; margin: 0 auto 25px; height: 100px; border-radius: 12px; object-fit: contain; background: #fff; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        <img src="/static/logoufal.png" alt="" style="display:block;margin:0 auto 14px;height:80px;border-radius:10px;object-fit:contain;background:#fff;padding:4px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+        <h1 style="font-size:22px;font-weight:700;color:#0f172a;margin:0">CCIH</h1>
         <p style="font-size:13px;color:#64748b;margin-top:4px">Controle de Infecção Hospitalar</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px">
@@ -182,73 +107,54 @@
         </div>
         <div>
           <div class="label">Senha</div>
-          <input id="login-senha" class="input-field" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <input id="login-senha" class="input-field" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') App.login()"/>
         </div>
         <div id="login-error" style="display:none;background:#fee2e2;color:#991b1b;padding:10px 14px;border-radius:10px;font-size:13px"></div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="App.login()">
-          Entrar no Sistema
-        </button>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" onclick="App.login()">Entrar no Sistema</button>
       </div>
       <p style="text-align:center;font-size:12px;color:#94a3b8;margin-top:20px">Projeto Acadêmico — Sistema Seguro</p>
     </div>
   </div>
 
+  <!-- APP -->
   <div id="app-screen" style="display:none">
-    
     <div id="sidebar-overlay" onclick="App.closeSidebar()"></div>
 
     <nav id="sidebar">
       <div style="padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)">
-        
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-          <img src="/static/logoufal.png" alt="Logo UFAL" style="height: 40px; border-radius: 8px; object-fit: contain; background: white; padding: 2px;">
+          <img src="/static/logoufal.png" alt="Logo" style="height:40px;border-radius:8px;object-fit:contain;background:white;padding:2px;">
           <div>
             <div style="font-size:18px;font-weight:700;color:white;letter-spacing:.5px">CCIH</div>
             <div style="font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:1px;margin-top:2px">PROJETO ACADÊMICO</div>
           </div>
         </div>
-
         <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);padding:10px 14px;border-radius:10px">
-          <div style="width:34px;height:34px;border-radius:50%;background:var(--teal-500);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">
-            <span id="nav-user-initial">U</span>
-          </div>
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--teal-500);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">U</div>
           <div style="min-width:0">
             <div id="nav-user-nome" style="color:white;font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Usuário</div>
             <div id="nav-user-nivel" style="color:var(--teal-400);font-size:11px;font-weight:500;margin-top:2px">Nível</div>
           </div>
         </div>
       </div>
-
       <div style="padding:16px 0;flex-grow:1;display:flex;flex-direction:column;gap:4px">
-        <div class="nav-item active" data-view="dashboard" onclick="App.navigate('dashboard')">
-          <div class="nav-icon">📊</div> Dashboard
-        </div>
-        <div class="nav-item" data-view="pacientes" onclick="App.navigate('pacientes')">
-          <div class="nav-icon">🛏️</div> Pacientes
-        </div>
+        <div class="nav-item active" data-view="dashboard" onclick="App.navigate('dashboard')"><div class="nav-icon">📊</div> Dashboard</div>
+        <div class="nav-item" data-view="pacientes" onclick="App.navigate('pacientes')"><div class="nav-icon">🛏️</div> Pacientes</div>
         <div id="nav-admin-group" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">
           <div style="padding:0 20px 8px;font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:1px">Administração</div>
-          <div class="nav-item" data-view="setores" onclick="App.navigate('setores')">
-            <div class="nav-icon">🏥</div> Setores / Alas
-          </div>
-          <div class="nav-item" data-view="usuarios" onclick="App.navigate('usuarios')">
-            <div class="nav-icon">👥</div> Usuários
-          </div>
+          <div class="nav-item" data-view="setores" onclick="App.navigate('setores')"><div class="nav-icon">🏥</div> Setores / Alas</div>
+          <div class="nav-item" data-view="usuarios" onclick="App.navigate('usuarios')"><div class="nav-icon">👥</div> Usuários</div>
         </div>
       </div>
-
       <div style="padding:20px">
         <button class="btn" style="width:100%;background:rgba(239,68,68,.1);color:#ef4444;justify-content:center" onclick="App.logout()">Sair do Sistema</button>
       </div>
     </nav>
 
     <main id="main-content">
-      
       <header style="background:white;height:70px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--slate-200);position:sticky;top:0;z-index:30">
         <div style="display:flex;align-items:center;gap:16px">
-          <button class="btn btn-ghost" style="padding:8px;border:none" onclick="App.openSidebar()">
-            <span style="font-size:20px">☰</span>
-          </button>
+          <button class="btn btn-ghost" style="padding:8px;border:none" onclick="App.openSidebar()"><span style="font-size:20px">☰</span></button>
           <div>
             <h2 id="topbar-title" style="font-size:18px;font-weight:700;color:var(--slate-800)">Dashboard</h2>
             <div id="topbar-setor" style="font-size:12px;color:var(--teal-600);font-weight:600;display:none;margin-top:2px">Setor Restrito</div>
@@ -260,91 +166,49 @@
       </header>
 
       <div style="padding:24px;max-width:1200px;margin:0 auto">
-        
+
+        <!-- DASHBOARD -->
         <div id="view-dashboard">
-          
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
-            <div>
-              <div class="section-title">Dashboard / Relatórios</div>
-              <div class="section-sub">Métricas de controle de infecção</div>
-            </div>
+            <div><div class="section-title">Dashboard / Relatórios</div><div class="section-sub">Métricas de controle de infecção</div></div>
             <div style="display:flex;gap:10px;">
               <button class="btn btn-ghost hide-mobile" onclick="App.openModalSenha()">🔑 Mudar Senha</button>
-              <button id="btn-imprimir-relatorio" class="btn btn-primary" style="display:none;" onclick="App.imprimirRelatorioGeral()">🖨️ Gerar Relatório Geral</button>
+              <button id="btn-imprimir-relatorio" class="btn btn-primary" style="display:none;" onclick="App.imprimirRelatorioGeral()">🖨️ Gerar Relatório</button>
               <input type="month" id="filtro-mes" class="input-field" style="width:150px" onchange="App.loadDashboard()"/>
             </div>
           </div>
-
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:24px">
-            <div class="metric-card">
-              <div style="font-size:13px;font-weight:600;color:var(--slate-500);text-transform:uppercase;margin-bottom:8px">Pacientes Internados</div>
-              <div id="dash-internados" style="font-size:32px;font-weight:700;color:var(--teal-600)">0</div>
-            </div>
-            <div class="metric-card">
-              <div style="font-size:13px;font-weight:600;color:var(--slate-500);text-transform:uppercase;margin-bottom:8px">Altas no Mês</div>
-              <div id="dash-altas" style="font-size:32px;font-weight:700;color:var(--slate-800)">0</div>
-            </div>
-            <div class="metric-card">
-              <div style="font-size:13px;font-weight:600;color:var(--slate-500);text-transform:uppercase;margin-bottom:8px">Infecções Notificadas</div>
-              <div id="dash-infeccoes" style="font-size:32px;font-weight:700;color:#ef4444">0</div>
-            </div>
+            <div class="metric-card"><div style="font-size:13px;font-weight:600;color:var(--slate-500);text-transform:uppercase;margin-bottom:8px">Pacientes Internados</div><div id="dash-internados" style="font-size:32px;font-weight:700;color:var(--teal-600)">0</div></div>
+            <div class="metric-card"><div style="font-size:13px;font-weight:600;color:var(--slate-500);text-transform:uppercase;margin-bottom:8px">Altas no Mês</div><div id="dash-altas" style="font-size:32px;font-weight:700;color:var(--slate-800)">0</div></div>
+            <div class="metric-card"><div style="font-size:13px;font-weight:600;color:var(--slate-500);text-transform:uppercase;margin-bottom:8px">Infecções Notificadas</div><div id="dash-infeccoes" style="font-size:32px;font-weight:700;color:#ef4444">0</div></div>
           </div>
-
-          <div style="font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-            <span>📈</span> Taxas de Infecção Hospitalar (IH)
-          </div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span>📈</span> Taxas de Infecção Hospitalar (IH)</div>
           <div id="taxas-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px"></div>
-
-          <div style="font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-            <span>💉</span> Infecções por Dispositivos Invasivos
-          </div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span>💉</span> Infecções por Dispositivos Invasivos</div>
           <div id="dispositivos-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:30px"></div>
-
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-bottom:24px">
-            <div class="card" style="padding:24px">
-              <div style="font-size:15px;font-weight:700;margin-bottom:16px">🏗️ Pacientes por Setor</div>
-              <div id="por-setor-list"></div>
-            </div>
-            <div class="card" style="padding:24px">
-              <div style="font-size:15px;font-weight:700;margin-bottom:16px">🦠 Infecções por Tipo</div>
-              <div id="por-tipo-list"></div>
-            </div>
+            <div class="card" style="padding:24px"><div style="font-size:15px;font-weight:700;margin-bottom:16px">🏗️ Pacientes por Setor</div><div id="por-setor-list"></div></div>
+            <div class="card" style="padding:24px"><div style="font-size:15px;font-weight:700;margin-bottom:16px">🦠 Infecções por Tipo</div><div id="por-tipo-list"></div></div>
           </div>
-
           <div class="card" style="padding:24px">
             <div style="font-size:15px;font-weight:700;margin-bottom:16px">🚨 Últimas Notificações</div>
-            <div style="overflow-x:auto">
-              <table class="tbl">
-                <thead>
-                  <tr>
-                    <th>Paciente</th>
-                    <th>Tipo</th>
-                    <th>Setor</th>
-                    <th>Data</th>
-                  </tr>
-                </thead>
-                <tbody id="ultimas-inf-body"></tbody>
-              </table>
-            </div>
+            <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Paciente</th><th>Tipo</th><th>Setor</th><th>Data</th></tr></thead><tbody id="ultimas-inf-body"></tbody></table></div>
           </div>
-
         </div>
 
+        <!-- PACIENTES -->
         <div id="view-pacientes" style="display:none">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-            <div>
-              <div class="section-title">Pacientes</div>
-              <div class="section-sub">Lista de internados no hospital</div>
-            </div>
+            <div><div class="section-title">Pacientes</div><div class="section-sub">Lista de internados no hospital</div></div>
             <div style="display:flex;gap:10px">
               <input type="text" id="pac-search" class="input-field" placeholder="Buscar paciente..." style="width:200px" onkeyup="App.filterPacientes()"/>
               <button class="btn btn-primary write-only" onclick="App.openModalNovoPaciente()">+ Novo Paciente</button>
             </div>
           </div>
-
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px" id="pacientes-grid"></div>
         </div>
 
+        <!-- DETALHE PACIENTE -->
         <div id="view-paciente-detail" style="display:none">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
             <button class="btn btn-ghost" onclick="App.navigate('pacientes')">← Voltar</button>
@@ -352,15 +216,16 @@
               <div class="section-title" id="det-nome">Nome</div>
               <div class="section-sub" id="det-sub">Leito / Setor</div>
             </div>
+            <button class="btn btn-warning write-only" onclick="App.openModalEditarPaciente()">✏️ Editar</button>
             <button class="btn btn-danger write-only" onclick="App.openModalAlta()">Dar Alta</button>
           </div>
-
           <div style="display:grid;grid-template-columns:1fr;gap:24px">
-            
+            <!-- Diagnostico -->
+            <div class="card" style="padding:20px" id="det-diagnostico-card"></div>
+
+            <!-- Temperatura -->
             <div class="card" style="padding:20px">
-              <div style="font-weight:700;font-size:15px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
-                <span>🌡️</span> Controle Diário (Temperatura)
-              </div>
+              <div style="font-weight:700;font-size:15px;margin-bottom:16px;display:flex;align-items:center;gap:8px"><span>🌡️</span> Controle Diário (Temperatura)</div>
               <div style="display:flex;gap:10px;margin-bottom:16px" class="write-only">
                 <input type="date" id="reg-data" class="input-field" style="width:140px"/>
                 <input type="number" step="0.1" id="reg-temp" class="input-field" placeholder="Temp °C" style="width:120px"/>
@@ -370,7 +235,6 @@
             </div>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px">
-              
               <div class="card">
                 <div style="padding:20px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center">
                   <div style="font-weight:700;font-size:14px">Procedimentos / Dispositivos</div>
@@ -378,7 +242,6 @@
                 </div>
                 <div style="padding:20px" id="procedimentos-list"></div>
               </div>
-
               <div class="card">
                 <div style="padding:20px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center">
                   <div style="font-weight:700;font-size:14px;color:#ef4444">Infecções Diagnosticadas</div>
@@ -386,51 +249,34 @@
                 </div>
                 <div style="padding:20px;background:#fef2f2;min-height:100%" id="infeccoes-list"></div>
               </div>
-
             </div>
 
             <div class="card" style="margin-top:10px">
               <div style="padding:20px;border-bottom:1px solid #f1f5f9;font-weight:700;font-size:14px">Infecções Registradas</div>
-              <div style="overflow-x:auto">
-                <table class="tbl">
-                  <thead><tr><th>Tipo</th><th>Data Notificação</th></tr></thead>
-                  <tbody id="infeccoes-tbody"></tbody>
-                </table>
-              </div>
+              <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Tipo</th><th>Data Notificação</th></tr></thead><tbody id="infeccoes-tbody"></tbody></table></div>
             </div>
-
           </div>
         </div>
 
+        <!-- SETORES -->
         <div id="view-setores" style="display:none">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-            <div>
-              <div class="section-title">Setores / Alas</div>
-              <div class="section-sub">Gerenciar unidades hospitalares</div>
-            </div>
+            <div><div class="section-title">Setores / Alas</div><div class="section-sub">Gerenciar unidades hospitalares</div></div>
             <button class="btn btn-primary write-only" onclick="App.openModalNovoSetor()">+ Novo Setor</button>
           </div>
           <div class="card" style="overflow:hidden">
-            <table class="tbl">
-              <thead><tr><th>ID</th><th>Nome do Setor</th><th class="write-only">Ações</th></tr></thead>
-              <tbody id="setores-tbody"></tbody>
-            </table>
+            <table class="tbl"><thead><tr><th>ID</th><th>Nome do Setor</th><th class="write-only">Ações</th></tr></thead><tbody id="setores-tbody"></tbody></table>
           </div>
         </div>
 
+        <!-- USUARIOS -->
         <div id="view-usuarios" style="display:none">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-            <div>
-              <div class="section-title">Usuários</div>
-              <div class="section-sub">Acessos ao sistema</div>
-            </div>
+            <div><div class="section-title">Usuários</div><div class="section-sub">Acessos ao sistema</div></div>
             <button class="btn btn-primary write-only" onclick="App.openModalNovoUser()">+ Novo Usuário</button>
           </div>
           <div class="card" style="overflow:hidden">
-            <table class="tbl">
-              <thead><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Setor Restrito</th><th class="write-only">Ações</th></tr></thead>
-              <tbody id="usuarios-tbody"></tbody>
-            </table>
+            <table class="tbl"><thead><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Setor Restrito</th><th class="write-only">Ações</th></tr></thead><tbody id="usuarios-tbody"></tbody></table>
           </div>
         </div>
 
@@ -438,100 +284,48 @@
     </main>
   </div>
 
-  <div id="modal-setor" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 class="section-title" style="font-size:18px">Novo Setor</h3></div>
-      <div class="modal-body">
-        <div class="label">Nome do Setor</div>
-        <input id="ns-nome" class="input-field" type="text" placeholder="Ex: UTI Neonatal"/>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-setor')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarSetor()">Salvar</button>
-      </div>
-    </div>
-  </div>
+  <!-- MODAIS -->
 
-  <div id="modal-user" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header"><h3 class="section-title" style="font-size:18px">Novo Usuário</h3></div>
-      <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
-        <div>
-          <div class="label">Nome Completo</div>
-          <input id="nu-nome" class="input-field" type="text"/>
-        </div>
-        <div>
-          <div class="label">E-mail</div>
-          <input id="nu-email" class="input-field" type="email"/>
-        </div>
-        <div>
-          <div class="label">Senha Inicial</div>
-          <input id="nu-senha" class="input-field" type="password" placeholder="Mínimo 6 caracteres"/>
-        </div>
-        <div>
-          <div class="label">Nível de Acesso *</div>
-          <select id="nu-nivel" class="input-field" onchange="App.onNivelChange()">
-            <option value="">Selecione...</option>
-            <option value="admin">Administrador (Total)</option>
-            <option value="estagiario">Estagiário / Enfermeiro (Restrito a setor)</option>
-            <option value="espectador">Espectador (Apenas Leitura)</option>
-          </select>
-        </div>
-        <div id="nu-setor-wrap" style="display:none">
-          <div class="label">Restringir ao Setor</div>
-          <select id="nu-setor" class="input-field"></select>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="App.closeModal('modal-user')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarUsuario()">Cadastrar</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- Modal: Novo/Editar Paciente -->
   <div id="modal-paciente" class="modal-overlay">
     <div class="modal-box">
-      <div class="modal-header"><h3 class="section-title" style="font-size:18px">Internar Paciente</h3></div>
+      <div class="modal-header"><h3 class="section-title" style="font-size:18px" id="modal-pac-title">Internar Paciente</h3></div>
       <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
-        <div>
-          <div class="label">Nome do Paciente *</div>
-          <input id="np-nome" class="input-field" type="text"/>
-        </div>
+        <div><div class="label">Nome do Paciente *</div><input id="np-nome" class="input-field" type="text"/></div>
         <div style="display:flex;gap:14px">
-          <div style="flex:1">
-            <div class="label">Idade</div>
-            <input id="np-idade" class="input-field" type="number"/>
-          </div>
-          <div style="flex:1">
-            <div class="label">Prontuário</div>
-            <input id="np-prontuario" class="input-field" type="text"/>
-          </div>
+          <div style="flex:1"><div class="label">Idade</div><input id="np-idade" class="input-field" type="number"/></div>
+          <div style="flex:1"><div class="label">Prontuário</div><input id="np-prontuario" class="input-field" type="text"/></div>
         </div>
         <div style="display:flex;gap:14px">
           <div style="flex:1" id="np-setor-wrap">
             <div class="label">Setor / Ala *</div>
             <select id="np-setor" class="input-field"></select>
           </div>
+          <div style="flex:1"><div class="label">Leito</div><input id="np-leito" class="input-field" type="text"/></div>
+        </div>
+        <div style="display:flex;gap:14px">
           <div style="flex:1">
-            <div class="label">Leito</div>
-            <input id="np-leito" class="input-field" type="text"/>
+            <div class="label">Data de Internação</div>
+            <input id="np-data-internacao" class="input-field" type="date"/>
           </div>
+        </div>
+        <div>
+          <div class="label">Diagnóstico</div>
+          <textarea id="np-diagnostico" class="input-field" rows="2" placeholder="Descreva o diagnóstico..." style="resize:vertical"></textarea>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-paciente')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarPaciente()">Internar</button>
+        <button class="btn btn-primary" id="btn-salvar-paciente" onclick="App.salvarPaciente()">Internar</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal: Alta -->
   <div id="modal-alta" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px;color:#ef4444">Registrar Saída / Alta</h3></div>
-      <div class="modal-body">
-        <div class="label">Motivo da Saída</div>
-        <select id="ma-motivo" class="input-field"></select>
-      </div>
+      <div class="modal-body"><div class="label">Motivo da Saída</div><select id="ma-motivo" class="input-field"></select></div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-alta')">Cancelar</button>
         <button class="btn btn-danger" onclick="App.confirmarAlta()">Confirmar Saída</button>
@@ -539,18 +333,20 @@
     </div>
   </div>
 
+  <!-- Modal: Procedimento -->
   <div id="modal-proc" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Inserir Dispositivo</h3></div>
       <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
         <div>
           <div class="label">Tipo de Procedimento / Dispositivo</div>
-          <select id="proc-tipo" class="input-field"></select>
+          <select id="proc-tipo" class="input-field" onchange="App.onProcTipoChange()"></select>
         </div>
-        <div>
-          <div class="label">Data de Inserção</div>
-          <input id="proc-data" type="date" class="input-field"/>
+        <div id="proc-outro-wrap" style="display:none">
+          <div class="label">Especificar Dispositivo</div>
+          <input id="proc-outro-texto" class="input-field" type="text" placeholder="Descreva o dispositivo..."/>
         </div>
+        <div><div class="label">Data de Inserção</div><input id="proc-data" type="date" class="input-field"/></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-proc')">Cancelar</button>
@@ -559,13 +355,11 @@
     </div>
   </div>
 
+  <!-- Modal: Remover Procedimento -->
   <div id="modal-rem-proc" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Remover Dispositivo</h3></div>
-      <div class="modal-body">
-        <div class="label">Data de Remoção</div>
-        <input id="rem-proc-data" type="date" class="input-field"/>
-      </div>
+      <div class="modal-body"><div class="label">Data de Remoção</div><input id="rem-proc-data" type="date" class="input-field"/></div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-rem-proc')">Cancelar</button>
         <button class="btn btn-primary" onclick="App.confirmarRemoverProc()">Remover Dispositivo</button>
@@ -573,8 +367,9 @@
     </div>
   </div>
 
+  <!-- Modal: Infecção -->
   <div id="modal-inf" class="modal-overlay">
-    <div class="modal-box" style="border-top: 4px solid #ef4444">
+    <div class="modal-box" style="border-top:4px solid #ef4444">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px;color:#ef4444">Notificar Infecção</h3></div>
       <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
         <div>
@@ -587,10 +382,7 @@
             <option value="Outra">Outra</option>
           </select>
         </div>
-        <div>
-          <div class="label">Data do Diagnóstico</div>
-          <input id="inf-data" type="date" class="input-field"/>
-        </div>
+        <div><div class="label">Data do Diagnóstico</div><input id="inf-data" type="date" class="input-field"/></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-inf')">Cancelar</button>
@@ -599,18 +391,51 @@
     </div>
   </div>
 
+  <!-- Modal: Setor -->
+  <div id="modal-setor" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header"><h3 class="section-title" style="font-size:18px">Novo Setor</h3></div>
+      <div class="modal-body"><div class="label">Nome do Setor</div><input id="ns-nome" class="input-field" type="text" placeholder="Ex: UTI Neonatal"/></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-setor')">Cancelar</button>
+        <button class="btn btn-primary" onclick="App.salvarSetor()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Usuário -->
+  <div id="modal-user" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header"><h3 class="section-title" style="font-size:18px">Novo Usuário</h3></div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+        <div><div class="label">Nome Completo</div><input id="nu-nome" class="input-field" type="text"/></div>
+        <div><div class="label">E-mail</div><input id="nu-email" class="input-field" type="email"/></div>
+        <div><div class="label">Senha Inicial</div><input id="nu-senha" class="input-field" type="password" placeholder="Mínimo 6 caracteres"/></div>
+        <div>
+          <div class="label">Nível de Acesso *</div>
+          <select id="nu-nivel" class="input-field" onchange="App.onNivelChange()">
+            <option value="">Selecione...</option>
+            <option value="admin">Administrador (Total)</option>
+            <option value="estagiario">Estagiário / Enfermeiro (Restrito a setor)</option>
+            <option value="espectador">Espectador (Apenas Leitura)</option>
+          </select>
+        </div>
+        <div id="nu-setor-wrap" style="display:none"><div class="label">Restringir ao Setor</div><select id="nu-setor" class="input-field"></select></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-user')">Cancelar</button>
+        <button class="btn btn-primary" onclick="App.salvarUsuario()">Cadastrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Senha -->
   <div id="modal-senha" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Mudar Minha Senha</h3></div>
       <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
-        <div>
-          <div class="label">Senha Atual</div>
-          <input id="senha-atual" type="password" class="input-field">
-        </div>
-        <div>
-          <div class="label">Nova Senha</div>
-          <input id="nova-senha" type="password" class="input-field" placeholder="Mínimo 6 caracteres">
-        </div>
+        <div><div class="label">Senha Atual</div><input id="senha-atual" type="password" class="input-field"></div>
+        <div><div class="label">Nova Senha</div><input id="nova-senha" type="password" class="input-field" placeholder="Mínimo 6 caracteres"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-senha')">Cancelar</button>
@@ -621,6 +446,515 @@
 
   <div id="toast-container"></div>
 
-  <script src="/static/script.js"></script>
+<script>
+const PROCEDIMENTOS_LIST = [
+  'acesso venoso periferico (PVP)',
+  'cateter venoso central puncao',
+  'cateter venoso central dessecacao',
+  'cateter swan ganz',
+  'cateter nutricao parental',
+  'dissecacao de veia periferica',
+  'entubacao',
+  'respiracao artificial',
+  'traqueostomia',
+  'sonda gastrica',
+  'sonda nasoenteral',
+  'sonda vesical',
+  'cateter arterial',
+  'dreno cirurgia neurologica',
+  'dreno mediastino',
+  'dialise peritoneal',
+  'outro',
+];
+
+const NIVEL_LABELS = { admin: '🔑 Administrador', estagiario: '🩺 Estagiário', espectador: '👁 Espectador' };
+
+const INF_COLORS = {
+  'Trato Urinário': '#3b82f6', 'Trato Urinario': '#3b82f6',
+  'Sepse': '#ef4444', 'Pneumonia': '#f59e0b',
+  'Ferida Operatória': '#8b5cf6', 'Ferida Operatoria': '#8b5cf6',
+  'Outra': '#64748b',
+};
+
+const State = {
+  user: null, pacientes: [], setores: [], motivos: [],
+  currentView: 'dashboard', currentPacienteId: null, currentPacienteData: null,
+  pendingProcId: null, editMode: false,
+};
+
+function today() { return new Date().toISOString().split('T')[0]; }
+function currentMonth() { return new Date().toISOString().slice(0, 7); }
+
+function diffDias(dataStr) {
+  if (!dataStr) return null;
+  const d = new Date(dataStr + 'T00:00:00');
+  const now = new Date(); now.setHours(0,0,0,0);
+  return Math.floor((now - d) / 86400000);
+}
+
+function formatDate(str) {
+  if (!str) return '—';
+  const [y, m, d] = str.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function diasBadge(dias) {
+  if (dias === null) return '';
+  let cls = 'dias-ok';
+  if (dias >= 7 && dias < 14) cls = 'dias-warn';
+  if (dias >= 14) cls = 'dias-danger';
+  return `<span class="dias-badge ${cls}">⏱ ${dias}d</span>`;
+}
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+async function api(method, path, body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Erro no servidor');
+  return data;
+}
+
+const App = {
+  async login() {
+    const email = document.getElementById('login-email').value.trim();
+    const senha = document.getElementById('login-senha').value;
+    const errEl = document.getElementById('login-error');
+    errEl.style.display = 'none';
+    try {
+      const user = await api('POST', '/api/auth/login', { email, senha });
+      State.user = user;
+      this.initApp();
+    } catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+  },
+
+  async logout() {
+    await api('POST', '/api/auth/logout');
+    State.user = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-senha').value = '';
+  },
+
+  async checkSession() {
+    try {
+      const user = await api('GET', '/api/auth/me');
+      State.user = user;
+      this.initApp();
+    } catch { document.getElementById('login-screen').style.display = 'flex'; }
+  },
+
+  async initApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    const u = State.user;
+    document.getElementById('nav-user-nome').textContent = u.nome;
+    document.getElementById('nav-user-nivel').textContent = NIVEL_LABELS[u.nivel_acesso] || u.nivel_acesso;
+    if (u.nivel_acesso === 'admin') {
+      document.getElementById('nav-admin-group').style.display = 'block';
+      document.getElementById('btn-imprimir-relatorio').style.display = 'inline-flex';
+    }
+    if (u.nivel_acesso === 'espectador') {
+      document.getElementById('readonly-badge').style.display = 'flex';
+      document.querySelectorAll('.write-only').forEach(el => el.style.display = 'none');
+    }
+    if (u.nivel_acesso === 'estagiario' && u.setor_id) {
+      document.getElementById('topbar-setor').style.display = 'block';
+    }
+    document.getElementById('filtro-mes').value = currentMonth();
+    document.getElementById('reg-data').value = today();
+    document.getElementById('inf-data').value = today();
+    await this.loadSetores();
+    await this.loadMotivos();
+    this.navigate('dashboard');
+  },
+
+  openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('show'); },
+  closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('show'); },
+
+  navigate(view) {
+    this.closeSidebar();
+    State.currentView = view;
+    const titles = { dashboard: 'Dashboard Global', pacientes: 'Pacientes', 'paciente-detail': 'Detalhes do Paciente', setores: 'Setores / Alas', usuarios: 'Usuários' };
+    document.getElementById('topbar-title').textContent = titles[view] || view;
+    document.querySelectorAll('[id^="view-"]').forEach(v => v.style.display = 'none');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const el = document.getElementById(`view-${view}`);
+    if (el) el.style.display = 'block';
+    const navEl = document.querySelector(`[data-view="${view}"]`);
+    if (navEl) navEl.classList.add('active');
+    if (view === 'dashboard') this.loadDashboard();
+    if (view === 'pacientes') this.loadPacientes();
+    if (view === 'setores') this.loadSetoresView();
+    if (view === 'usuarios') this.loadUsuarios();
+  },
+
+  closeModal,
+
+  openModalSenha() { document.getElementById('senha-atual').value = ''; document.getElementById('nova-senha').value = ''; showModal('modal-senha'); },
+  async salvarSenha() {
+    const atual = document.getElementById('senha-atual').value;
+    const nova = document.getElementById('nova-senha').value;
+    if (!atual || !nova) return toast('Preencha as senhas', 'error');
+    try { await api('PUT', '/api/auth/senha', { senha_atual: atual, nova_senha: nova }); toast('Senha atualizada!'); closeModal('modal-senha'); } catch(e) { toast(e.message, 'error'); }
+  },
+
+  imprimirRelatorioGeral() {
+    const mes = document.getElementById('filtro-mes').value || currentMonth();
+    window.open(`/relatorio-impresso?mes=${mes}`, '_blank');
+  },
+
+  async loadDashboard() {
+    const mes = document.getElementById('filtro-mes').value || currentMonth();
+    try { const data = await api('GET', `/api/dashboard/relatorios?mes=${mes}`); this.renderDashboard(data); } catch(e) { toast('Erro ao carregar dashboard: ' + e.message, 'error'); }
+  },
+
+  renderDashboard(data) {
+    const t = data.totais;
+    document.getElementById('dash-internados').textContent = t.pacientes_internados;
+    document.getElementById('dash-altas').textContent = t.pacientes_alta;
+    document.getElementById('dash-infeccoes').textContent = t.infeccoes_mes;
+
+    const taxas = [
+      { label: 'IH Geral', key: 'geral', icon: '📊', desc: 'Taxa geral de infecções' },
+      { label: 'IH Urinário', key: 'urinario', icon: '💧', desc: 'Proporção de ITU' },
+      { label: 'IH Sangue/Sepse', key: 'sepse', icon: '🩸', desc: 'Proporção de Sepse' },
+      { label: 'IH Pneumonia', key: 'pneumonia', icon: '🫁', desc: 'Proporção de Pneumonia' },
+      { label: 'IH Cirúrgica', key: 'cirurgica', icon: '🔪', desc: 'Proporção de Ferida Op.' },
+    ];
+    document.getElementById('taxas-grid').innerHTML = taxas.map(tx => {
+      const val = data.taxas[tx.key] || 0;
+      const color = val > 20 ? '#ef4444' : val > 10 ? '#f59e0b' : '#14b8a6';
+      return `<div style="background:#f8fafc;border-radius:12px;padding:16px;border:1px solid #e2e8f0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:20px">${tx.icon}</span>
+          <div><div style="font-size:13px;font-weight:700;color:#0f172a">${tx.label}</div><div style="font-size:11px;color:#94a3b8">${tx.desc}</div></div></div>
+        <div style="font-size:28px;font-weight:700;color:${color};margin-bottom:8px">${val.toFixed(1)}%</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(val,100)}%;background:${color}"></div></div></div>`;
+    }).join('');
+
+    const disp = [
+      { label: 'Septicemia por Cateter', key: 'cateter', icon: '🩹' },
+      { label: 'PAV (Respiradores)', key: 'respirador', icon: '💨' },
+      { label: 'ITU por Sonda', key: 'sonda_vesical', icon: '🔵' },
+    ];
+    document.getElementById('dispositivos-grid').innerHTML = disp.map(d => {
+      const val = data.taxas[d.key] || 0;
+      const color = val > 20 ? '#ef4444' : val > 10 ? '#f59e0b' : '#14b8a6';
+      return `<div style="background:#f8fafc;border-radius:12px;padding:16px;border:1px solid #e2e8f0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:20px">${d.icon}</span>
+          <div style="font-size:13px;font-weight:700;color:#0f172a">${d.label}</div></div>
+        <div style="font-size:28px;font-weight:700;color:${color}">${val.toFixed(1)}%</div>
+        <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${Math.min(val,100)}%;background:${color}"></div></div></div>`;
+    }).join('');
+
+    const maxSetor = Math.max(...(data.por_setor.map(s => s.total)), 1);
+    document.getElementById('por-setor-list').innerHTML = data.por_setor.length
+      ? data.por_setor.map(s => `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="font-weight:500">${s.setor}</span><span class="badge badge-teal">${s.total}</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${(s.total/maxSetor*100).toFixed(0)}%;background:#14b8a6"></div></div></div>`).join('')
+      : '<p style="color:#94a3b8;font-size:13px">Nenhum internado</p>';
+
+    document.getElementById('por-tipo-list').innerHTML = data.por_tipo.length
+      ? data.por_tipo.map(t => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9">
+          <span style="font-size:13px;font-weight:500"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${INF_COLORS[t.tipo_infeccao]||'#64748b'};margin-right:6px"></span>${t.tipo_infeccao}</span>
+          <span style="font-weight:700;font-size:13px">${t.total}</span></div>`).join('')
+      : '<p style="color:#94a3b8;font-size:13px">Nenhuma infecção no mês</p>';
+
+    document.getElementById('ultimas-inf-body').innerHTML = data.ultimas_infeccoes.length
+      ? data.ultimas_infeccoes.map(i => `<tr>
+          <td style="font-weight:600;color:var(--slate-800)">${i.paciente_nome}</td>
+          <td><span class="badge" style="background:${(INF_COLORS[i.tipo_infeccao]||'#000')+'20'};color:${INF_COLORS[i.tipo_infeccao]||'#000'}">${i.tipo_infeccao}</span></td>
+          <td>${i.setor_nome || '—'}</td>
+          <td style="font-size:12px">${formatDate(i.data_notificacao)}</td></tr>`).join('')
+      : '<tr><td colspan="4" style="text-align:center;color:#94a3b8">Nenhum registro recente</td></tr>';
+  },
+
+  // ── PACIENTES ──
+  async loadPacientes() {
+    try { State.pacientes = await api('GET', '/api/pacientes'); this.renderPacientes(); } catch(e) { toast('Erro ao carregar pacientes', 'error'); }
+  },
+
+  renderPacientes() {
+    const term = document.getElementById('pac-search').value.toLowerCase();
+    const list = State.pacientes.filter(p => p.nome.toLowerCase().includes(term));
+    const html = list.map(p => {
+      const hasInf = p.infeccoes && p.infeccoes.length > 0;
+      const corBorda = hasInf ? '#ef4444' : '#14b8a6';
+      const diasInternado = diffDias(p.data_internacao);
+      return `<div class="card" style="padding:16px;border-left:4px solid ${corBorda};cursor:pointer;background:${hasInf?'#fef2f2':'#fff'}" onclick="App.verPaciente(${p.id})">
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px;color:var(--slate-800)">${p.nome}</div>
+        <div style="font-size:12px;color:var(--slate-500);margin-bottom:8px">
+          Prontuário: ${p.prontuario||'—'} • Idade: ${p.idade||'—'}${p.diagnostico ? ' • <em>'+p.diagnostico.substring(0,40)+(p.diagnostico.length>40?'...':'')+'</em>' : ''}
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="badge badge-gray">${p.setor_nome||'Sem Setor'}</span>
+          <span class="badge badge-gray">Leito ${p.leito||'—'}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          ${diasBadge(diasInternado)}
+          <span style="font-size:11px;color:var(--slate-400)">Internado: ${formatDate(p.data_internacao)}</span>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('pacientes-grid').innerHTML = html || '<div style="color:var(--slate-500)">Nenhum paciente encontrado.</div>';
+  },
+
+  filterPacientes() { this.renderPacientes(); },
+
+  openModalNovoPaciente() {
+    State.editMode = false;
+    document.getElementById('modal-pac-title').textContent = 'Internar Paciente';
+    document.getElementById('btn-salvar-paciente').textContent = 'Internar';
+    document.getElementById('np-nome').value = '';
+    document.getElementById('np-idade').value = '';
+    document.getElementById('np-prontuario').value = '';
+    document.getElementById('np-leito').value = '';
+    document.getElementById('np-diagnostico').value = '';
+    document.getElementById('np-data-internacao').value = today();
+    const sel = document.getElementById('np-setor');
+    sel.innerHTML = '<option value="">Selecione...</option>' + State.setores.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+    document.getElementById('np-setor-wrap').style.display = State.user.nivel_acesso === 'estagiario' ? 'none' : 'block';
+    showModal('modal-paciente');
+  },
+
+  openModalEditarPaciente() {
+    const p = State.currentPacienteData;
+    State.editMode = true;
+    document.getElementById('modal-pac-title').textContent = 'Editar Paciente';
+    document.getElementById('btn-salvar-paciente').textContent = 'Salvar Alterações';
+    document.getElementById('np-nome').value = p.nome || '';
+    document.getElementById('np-idade').value = p.idade || '';
+    document.getElementById('np-prontuario').value = p.prontuario || '';
+    document.getElementById('np-leito').value = p.leito || '';
+    document.getElementById('np-diagnostico').value = p.diagnostico || '';
+    document.getElementById('np-data-internacao').value = p.data_internacao || today();
+    const sel = document.getElementById('np-setor');
+    sel.innerHTML = '<option value="">Selecione...</option>' + State.setores.map(s => `<option value="${s.id}" ${s.id == p.setor_id_atual ? 'selected' : ''}>${s.nome}</option>`).join('');
+    document.getElementById('np-setor-wrap').style.display = State.user.nivel_acesso === 'estagiario' ? 'none' : 'block';
+    showModal('modal-paciente');
+  },
+
+  async salvarPaciente() {
+    const body = {
+      nome: document.getElementById('np-nome').value,
+      idade: document.getElementById('np-idade').value,
+      prontuario: document.getElementById('np-prontuario').value,
+      leito: document.getElementById('np-leito').value,
+      setor_id: document.getElementById('np-setor').value,
+      diagnostico: document.getElementById('np-diagnostico').value,
+      data_internacao: document.getElementById('np-data-internacao').value,
+    };
+    try {
+      if (State.editMode) {
+        await api('PUT', `/api/pacientes/${State.currentPacienteId}`, body);
+        toast('Paciente atualizado!');
+        closeModal('modal-paciente');
+        this.verPaciente(State.currentPacienteId);
+      } else {
+        await api('POST', '/api/pacientes', body);
+        toast('Paciente internado com sucesso!');
+        closeModal('modal-paciente');
+        this.loadPacientes();
+      }
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
+  async verPaciente(id) {
+    try {
+      const data = await api('GET', `/api/pacientes/${id}`);
+      State.currentPacienteId = id;
+      State.currentPacienteData = data;
+      this.navigate('paciente-detail');
+      this.renderPacienteDetail();
+    } catch(e) { toast('Erro ao carregar detalhes', 'error'); }
+  },
+
+  renderPacienteDetail() {
+    const p = State.currentPacienteData;
+    document.getElementById('det-nome').textContent = p.nome;
+    const diasInternado = diffDias(p.data_internacao);
+    document.getElementById('det-sub').textContent = `Idade: ${p.idade||'—'} | Setor: ${p.setor_nome||'—'} | Leito: ${p.leito||'—'} | Prontuário: ${p.prontuario||'—'} | Internado há: ${diasInternado !== null ? diasInternado + ' dias' : '—'} (${formatDate(p.data_internacao)})`;
+
+    // Card diagnóstico
+    document.getElementById('det-diagnostico-card').innerHTML = p.diagnostico
+      ? `<div style="display:flex;align-items:flex-start;gap:10px">
+          <span style="font-size:20px">🩺</span>
+          <div><div style="font-weight:700;font-size:14px;margin-bottom:4px">Diagnóstico</div>
+          <div style="font-size:14px;color:var(--slate-600)">${p.diagnostico}</div></div></div>`
+      : `<div style="font-size:13px;color:var(--slate-400)">🩺 Nenhum diagnóstico registrado.</div>`;
+
+    // Registros temperatura
+    document.getElementById('regs-list').innerHTML = p.registros.length
+      ? p.registros.slice(0,5).map(r => `<span class="badge ${r.temperatura>=37.8?'badge-red':'badge-green'}">${formatDate(r.data)}: ${r.temperatura}°C</span>`).join('')
+      : '<span style="font-size:12px;color:var(--slate-400)">Sem registros de temperatura</span>';
+
+    // Procedimentos
+    document.getElementById('procedimentos-list').innerHTML = p.procedimentos.length
+      ? p.procedimentos.map(pr => {
+          const dias = pr.status === 'ativo' ? diffDias(pr.data_insercao) : null;
+          return `<div class="proc-item">
+            <div class="proc-item-left">
+              <span style="font-size:16px">${pr.status==='ativo'?'🔵':'⚪'}</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--slate-800)">${pr.tipo_procedimento}</div>
+                <div style="font-size:11px;color:var(--slate-400)">Ins: ${formatDate(pr.data_insercao)} ${pr.data_remocao?'| Rem: '+formatDate(pr.data_remocao):''}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center">
+              ${pr.status==='ativo' ? diasBadge(dias) : '<span class="badge badge-gray">Removido</span>'}
+              ${pr.status==='ativo' && State.user.nivel_acesso !== 'espectador' ? `<button class="btn btn-ghost btn-sm write-only" style="padding:2px 6px" onclick="App.openModalRemProc(${pr.id})">Remover</button>` : ''}
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:13px;color:var(--slate-400)">Nenhum dispositivo registrado.</div>';
+
+    // Infecções
+    document.getElementById('infeccoes-tbody').innerHTML = p.infeccoes.length
+      ? p.infeccoes.map(i => `<tr><td style="font-weight:600">${i.tipo_infeccao}</td><td style="font-size:13px">${formatDate(i.data_notificacao)}</td></tr>`).join('')
+      : '<tr><td colspan="2" style="text-align:center;color:#94a3b8">Nenhuma infecção.</td></tr>';
+  },
+
+  async addRegistro() {
+    const data = document.getElementById('reg-data').value;
+    const temp = parseFloat(document.getElementById('reg-temp').value);
+    if (!data || !temp) return toast('Preencha os dados', 'error');
+    try {
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/registros`, { data, temperatura: temp });
+      toast('Temperatura registrada!');
+      document.getElementById('reg-temp').value = '';
+      this.verPaciente(State.currentPacienteId);
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
+  openModalProc() {
+    const sel = document.getElementById('proc-tipo');
+    sel.innerHTML = '<option value="">Selecione...</option>' + PROCEDIMENTOS_LIST.map(p => `<option value="${p}">${p}</option>`).join('');
+    document.getElementById('proc-data').value = today();
+    document.getElementById('proc-outro-wrap').style.display = 'none';
+    document.getElementById('proc-outro-texto').value = '';
+    showModal('modal-proc');
+  },
+
+  onProcTipoChange() {
+    const val = document.getElementById('proc-tipo').value;
+    document.getElementById('proc-outro-wrap').style.display = val === 'outro' ? 'block' : 'none';
+  },
+
+  async salvarProc() {
+    let tipo = document.getElementById('proc-tipo').value;
+    if (tipo === 'outro') {
+      tipo = document.getElementById('proc-outro-texto').value.trim();
+      if (!tipo) return toast('Descreva o dispositivo', 'error');
+    }
+    const data_ins = document.getElementById('proc-data').value;
+    if (!tipo || !data_ins) return toast('Preencha os campos obrigatórios', 'error');
+    try {
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/procedimentos`, { tipo_procedimento: tipo, data_insercao: data_ins });
+      toast('Dispositivo inserido!');
+      closeModal('modal-proc');
+      this.verPaciente(State.currentPacienteId);
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
+  openModalRemProc(id) {
+    State.pendingProcId = id;
+    document.getElementById('rem-proc-data').value = today();
+    showModal('modal-rem-proc');
+  },
+
+  async confirmarRemoverProc() {
+    try {
+      await api('POST', `/api/procedimentos/${State.pendingProcId}/remover`, { data_remocao: document.getElementById('rem-proc-data').value });
+      toast('Dispositivo removido!');
+      closeModal('modal-rem-proc');
+      this.verPaciente(State.currentPacienteId);
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
+  openModalInf() { showModal('modal-inf'); },
+
+  async salvarInf() {
+    const body = { tipo_infeccao: document.getElementById('inf-tipo').value, data_notificacao: document.getElementById('inf-data').value };
+    try {
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/infeccoes`, body);
+      toast('Infecção notificada!');
+      closeModal('modal-inf');
+      this.verPaciente(State.currentPacienteId);
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
+  openModalAlta() {
+    const sel = document.getElementById('ma-motivo');
+    sel.innerHTML = '<option value="">Selecione...</option>' + State.motivos.map(m => `<option value="${m.id}">${m.nome}</option>`).join('');
+    showModal('modal-alta');
+  },
+
+  async confirmarAlta() {
+    const motivo_id = document.getElementById('ma-motivo').value;
+    if (!motivo_id) return toast('Selecione um motivo', 'error');
+    try {
+      await api('POST', `/api/pacientes/${State.currentPacienteId}/alta`, { motivo_saida_id: motivo_id });
+      toast('Alta registrada!');
+      closeModal('modal-alta');
+      this.navigate('pacientes');
+    } catch(e) { toast(e.message, 'error'); }
+  },
+
+  // ── SETORES ──
+  async loadMotivos() { State.motivos = await api('GET', '/api/motivos_saida').catch(()=>[]); },
+  async loadSetores() { State.setores = await api('GET', '/api/setores').catch(()=>[]); },
+  async loadSetoresView() {
+    await this.loadSetores();
+    const html = State.setores.map(s => `<tr><td>${s.id}</td><td style="font-weight:600">${s.nome}</td><td class="write-only"><button class="btn btn-ghost btn-sm" onclick="App.deleteSetor(${s.id})">Excluir</button></td></tr>`).join('');
+    document.getElementById('setores-tbody').innerHTML = html || '<tr><td colspan="3">Nenhum setor.</td></tr>';
+  },
+  openModalNovoSetor() { document.getElementById('ns-nome').value = ''; showModal('modal-setor'); },
+  async salvarSetor() {
+    try { await api('POST', '/api/setores', { nome: document.getElementById('ns-nome').value }); toast('Setor adicionado'); closeModal('modal-setor'); this.loadSetoresView(); } catch(e) { toast(e.message, 'error'); }
+  },
+  async deleteSetor(id) {
+    if (!confirm('Certeza que deseja excluir?')) return;
+    try { await api('DELETE', `/api/setores/${id}`); toast('Excluído'); this.loadSetoresView(); } catch(e) { toast(e.message, 'error'); }
+  },
+
+  // ── USUARIOS ──
+  async loadUsuarios() {
+    try {
+      const users = await api('GET', '/api/usuarios');
+      document.getElementById('usuarios-tbody').innerHTML = users.map(u => `<tr><td style="font-weight:600">${u.nome}</td><td>${u.email}</td><td><span class="badge badge-gray">${u.nivel_acesso}</span></td><td>${u.setor_nome||'—'}</td><td class="write-only"><button class="btn btn-danger btn-sm" onclick="App.deleteUsuario(${u.id})">Excluir</button></td></tr>`).join('');
+    } catch(e) { toast('Erro ao carregar usuários', 'error'); }
+  },
+  openModalNovoUser() {
+    document.getElementById('nu-nome').value = ''; document.getElementById('nu-email').value = ''; document.getElementById('nu-senha').value = ''; document.getElementById('nu-nivel').value = '';
+    const sel = document.getElementById('nu-setor');
+    sel.innerHTML = '<option value="">Sem restrição</option>' + State.setores.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+    this.onNivelChange();
+    showModal('modal-user');
+  },
+  onNivelChange() { document.getElementById('nu-setor-wrap').style.display = document.getElementById('nu-nivel').value === 'estagiario' ? 'block' : 'none'; },
+  async salvarUsuario() {
+    const body = { nome: document.getElementById('nu-nome').value, email: document.getElementById('nu-email').value, senha: document.getElementById('nu-senha').value, nivel_acesso: document.getElementById('nu-nivel').value, setor_id: document.getElementById('nu-setor').value };
+    try { await api('POST', '/api/usuarios', body); toast('Usuário cadastrado!'); closeModal('modal-user'); this.loadUsuarios(); } catch(e) { toast(e.message, 'error'); }
+  },
+  async deleteUsuario(id) {
+    if (!confirm('Excluir usuário?')) return;
+    try { await api('DELETE', `/api/usuarios/${id}`); toast('Excluído'); this.loadUsuarios(); } catch(e) { toast(e.message, 'error'); }
+  },
+};
+
+document.addEventListener('DOMContentLoaded', () => App.checkSession());
+</script>
 </body>
 </html>
