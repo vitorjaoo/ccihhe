@@ -16,8 +16,11 @@ app.secret_key = os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP')
 # DATABASE SETUP (Turso Cloud Database Adapter)
 # ---------------------------------------------------------------------------
 # ✅ correto
-TURSO_URL   = os.environ.get('TURSO_URL')
-TURSO_TOKEN = os.environ.get('TURSO_TOKEN')
+# LINHA 18: Mude para https://
+TURSO_URL = os.environ.get('TURSO_DATABASE_URL', 'https://ccih-vitorrastrep.aws-us-east-2.turso.io')
+
+# LINHA 19: Certifique-se de que o Token está correto aqui entre as aspas
+TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN', 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzU2MDcxNTMsImlkIjoiMDE5ZDZhNmUtZTkwMS03YWQ5LTg2YjAtMWJhZWVmYjI1YWFkIiwicmlkIjoiYTlmZTQwZWItYzg1NS00NDRkLWFlMjktZGQzNjkwNzI0ODc0In0.jE7aM-fJc6osLvJ6RWCoSL2AyUY5aBq4wnBbTzK4TEKO6RWNxA958nsD21syq0ur1UPAosI56-0c-3igAdArDw')
 print(f"[CCIH] Conectando ao banco: {TURSO_URL}")
 
 
