@@ -138,9 +138,12 @@ def init_db():
         motivos = ['Alta Médica', 'Óbito', 'Transferência para outro hospital', 'Transferência para setor não rastreável']
         for m in motivos:
             c.execute("INSERT OR IGNORE INTO motivos_saida(nome) VALUES(?)", (m,))
-        c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('UTI Geral')")
-        c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Cirúrgica')")
-        c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Médica')")
+        # Só insere setores padrão se o banco estiver vazio (primeira instalação)
+        setor_count = c.execute("SELECT COUNT(*) as total FROM setores").fetchone()
+        if not setor_count or int(setor_count['total']) == 0:
+            c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('UTI Geral')")
+            c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Cirúrgica')")
+            c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Médica')")
 
         admin_check = c.execute("SELECT * FROM usuarios WHERE email='admin@ccih.com'").fetchone()
         if not admin_check:
