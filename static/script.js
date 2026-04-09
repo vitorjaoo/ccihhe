@@ -20,8 +20,11 @@ const PROCEDIMENTOS_LIST = [
   'diálise peritoneal',
   'acesso venoso periférico (PVP)',
   'sonda nasoenteral (SNE)',
+  'LPP',
   'Outros',
 ];
+
+const LPP_GRAUS = ['Grau I', 'Grau II', 'Grau III', 'Grau IV', 'Grau não definido'];
 
 const NIVEL_LABELS = {
   admin: '🔑 Administrador',
@@ -382,6 +385,7 @@ const App = {
             ${hasInf ? '<span class="badge badge-red">🦠 Infecção</span>' : ''}
             ${isTransito ? `<span style="font-size:11px;color:#92400e">→ ${p.setor_destino_nome || ''}</span>` : ''}
           </div>
+          ${p.ultima_atualizacao ? `<div style="margin-top:10px;padding-top:8px;border-top:1px solid #f1f5f9;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:4px">🕒 ${p.ultima_atualizacao}</div>` : ''}
         </div>`;
     }).join('');
     document.getElementById('pacientes-grid').innerHTML = html || '<div style="color:var(--slate-500)">Nenhum paciente encontrado.</div>';
@@ -649,16 +653,19 @@ const App = {
     document.getElementById('proc-data').value = today();
     document.getElementById('proc-outros-wrap').style.display = 'none';
     document.getElementById('proc-outros-texto').value = '';
+    document.getElementById('proc-lpp-wrap').style.display = 'none';
+    document.getElementById('proc-lpp-grau').value = '';
     showModal('modal-proc');
   },
 
   onProcTipoChange() {
     const sel = document.getElementById('proc-tipo');
-    const wrap = document.getElementById('proc-outros-wrap');
-    wrap.style.display = sel.value === 'Outros' ? 'block' : 'none';
-    if (sel.value !== 'Outros') {
-      document.getElementById('proc-outros-texto').value = '';
-    }
+    const wrapOutros = document.getElementById('proc-outros-wrap');
+    const wrapLpp = document.getElementById('proc-lpp-wrap');
+    wrapOutros.style.display = sel.value === 'Outros' ? 'block' : 'none';
+    wrapLpp.style.display = sel.value === 'LPP' ? 'block' : 'none';
+    if (sel.value !== 'Outros') document.getElementById('proc-outros-texto').value = '';
+    if (sel.value !== 'LPP') document.getElementById('proc-lpp-grau').value = '';
   },
 
   async salvarProc() {
@@ -667,6 +674,10 @@ const App = {
       const outros = document.getElementById('proc-outros-texto').value.trim();
       if (!outros) return toast('Descreva o dispositivo', 'error');
       tipo = outros;
+    } else if (tipo === 'LPP') {
+      const grau = document.getElementById('proc-lpp-grau').value;
+      if (!grau) return toast('Selecione o grau da LPP', 'error');
+      tipo = `LPP - ${grau}`;
     }
     const data_ins = document.getElementById('proc-data').value;
     if (!tipo) return toast('Selecione um dispositivo', 'error');
