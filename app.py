@@ -1,4 +1,4 @@
-import os 
+import os
 import json
 import hashlib
 from datetime import datetime, date
@@ -115,7 +115,7 @@ def init_db():
         except Exception:
             pass
 
-        motivos = ['Alta Médica', 'Óbito', 'Transferência para outro hospital']
+        motivos = ['Alta Médica', 'Óbito', 'Transferência para outro hospital', 'Transferência para setor não rastreável']
         for m in motivos:
             c.execute("INSERT OR IGNORE INTO motivos_saida(nome) VALUES(?)", (m,))
         c.execute("INSERT OR IGNORE INTO setores(nome) VALUES('UTI Geral')")
@@ -735,7 +735,7 @@ def relatorios():
     conn = get_db()
     try:
         pac_alta_row = conn.execute(
-            f"SELECT COUNT(DISTINCT p.id) as total FROM pacientes p WHERE p.status='alta' {wp}", params
+            f"SELECT COUNT(DISTINCT p.id) as total FROM pacientes p LEFT JOIN motivos_saida ms ON p.motivo_saida_id = ms.id WHERE p.status='alta' AND (ms.nome IS NULL OR ms.nome != 'Transferência para setor não rastreável') {wp}", params
         ).fetchone()
         pacientes_alta = int(pac_alta_row['total']) if pac_alta_row else 0
 
