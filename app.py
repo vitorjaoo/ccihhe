@@ -543,27 +543,33 @@ def dar_alta(pid):
 @login_required
 @not_readonly
 def solicitar_transferencia(pid):
-    data = request.json or {}
-    setor_destino_id = data.get('setor_destino_id')
-    if not setor_destino_id:
-        return jsonify({'error': 'Setor de destino obrigatório'}), 400
-    conn = get_db()
     try:
-        pac = conn.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone()
-        if not pac:
-            return jsonify({'error': 'Não encontrado'}), 404
-        if session.get('nivel_acesso') == 'estagiario' and pac['setor_id_atual'] != session.get('setor_id'):
-            return jsonify({'error': 'Sem permissão'}), 403
-        if str(setor_destino_id) == str(pac.get('setor_id_atual')):
-            return jsonify({'error': 'Setor de destino é o mesmo que o atual'}), 400
-        conn.execute(
-            "UPDATE pacientes SET status='transito', setor_destino_id=? WHERE id=?",
-            (int(setor_destino_id), pid)
-        )
-        conn.commit()
-    finally:
-        conn.close()
-    return jsonify({'ok': True})
+        data = request.json or {}
+        setor_destino_id = data.get('setor_destino_id')
+        if not setor_destino_id:
+            return jsonify({'error': 'Setor de destino obrigatório'}), 400
+        conn = get_db()
+        try:
+            pac = conn.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone()
+            if not pac:
+                return jsonify({'error': 'Não encontrado'}), 404
+            if session.get('nivel_acesso') == 'estagiario' and pac['setor_id_atual'] != session.get('setor_id'):
+                return jsonify({'error': 'Sem permissão'}), 403
+            if str(setor_destino_id) == str(pac.get('setor_id_atual')):
+                return jsonify({'error': 'Setor de destino é o mesmo que o atual'}), 400
+            conn.execute(
+                "UPDATE pacientes SET status='transito', setor_destino_id=? WHERE id=?",
+                (int(setor_destino_id), pid)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        return jsonify({'ok': True})
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print("ERROR IN solicitar_transferencia:", error_details)
+        return jsonify({'error': str(e) + " | Check terminal for full traceback"}), 500
 
 
 @app.route('/api/pacientes/<int:pid>/confirmar_transferencia', methods=['POST'])
