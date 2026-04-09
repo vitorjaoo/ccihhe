@@ -358,7 +358,7 @@ const App = {
     const list = State.pacientes.filter(p => p.nome.toLowerCase().includes(term));
     const html = list.map(p => {
       const hasInf = p.infeccoes && p.infeccoes.length > 0;
-      const isTransito = p.status === 'transito';
+      const isTransito = p.status === 'transito' || p.setor_destino_id != null;
       const corBorda = isTransito ? '#f59e0b' : hasInf ? '#ef4444' : '#14b8a6';
       const corFundo = isTransito ? '#fffbeb' : hasInf ? '#fef2f2' : '#fff';
       const diasInternacao = diffDias(p.data_internacao);
@@ -575,7 +575,7 @@ const App = {
     // Status de transferência
     const transfBanner = document.getElementById('transf-banner');
     if (transfBanner) {
-      if (p.status === 'transito') {
+      if (p.status === 'transito' || p.setor_destino_id != null) {
         transfBanner.style.display = 'flex';
         document.getElementById('transf-banner-destino').textContent = p.setor_destino_nome || '—';
       } else {
@@ -586,7 +586,8 @@ const App = {
     // Botão de transferência (visível apenas se não estiver em trânsito e não for espectador)
     const btnTransf = document.getElementById('btn-solicitar-transferencia');
     if (btnTransf) {
-      btnTransf.style.display = (p.status !== 'transito' && State.user.nivel_acesso !== 'espectador') ? 'inline-flex' : 'none';
+      const emTransito = p.status === 'transito' || p.setor_destino_id != null;
+      btnTransf.style.display = (!emTransito && State.user.nivel_acesso !== 'espectador') ? 'inline-flex' : 'none';
     }
 
     // Botão deletar (apenas admin)
