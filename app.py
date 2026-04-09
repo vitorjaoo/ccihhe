@@ -48,15 +48,23 @@ class TursoCursor:
         return self.rows
 
 
-class TursoAdapter:
-    def __init__(self):
-        print(f"[DB] URL={TURSO_URL[:40]}... TOKEN={'sim' if TURSO_TOKEN else 'NAO'}")
+_global_client = None
+
+def _get_global_client():
+    global _global_client
+    if _global_client is None:
+        print(f"[DB] Inicializando Global Client URL={TURSO_URL[:40]}...")
         if TURSO_URL.startswith("file:"):
-            self.client = libsql_client.create_client_sync(url=TURSO_URL)
+            _global_client = libsql_client.create_client_sync(url=TURSO_URL)
         else:
             if not TURSO_TOKEN:
                 raise Exception("TURSO_TOKEN não configurado!")
-            self.client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
+            _global_client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
+    return _global_client
+
+class TursoAdapter:
+    def __init__(self):
+        self.client = _get_global_client()
 
     def cursor(self):
         return self
@@ -76,7 +84,8 @@ class TursoAdapter:
         pass
 
     def close(self):
-        self.client.close()
+        # Não faz close do client global a cada request iterativo para salvar o tempo massivo de setup/teardown de loops
+        pass
 
 
 def get_db():
@@ -344,13 +353,27 @@ def get_pacientes():
             rows = conn.execute(
                 "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id = p.setor_id_atual LEFT JOIN setores sd ON sd.id = p.setor_destino_id WHERE (p.status='internado' OR p.status='transito') ORDER BY s.nome, p.nome"
             ).fetchall()
-        for p in rows:
-            p['procedimentos'] = conn.execute(
-                "SELECT * FROM procedimentos WHERE paciente_id=? AND status='ativo'", (p['id'],)
-            ).fetchall()
-            p['infeccoes'] = conn.execute(
-                "SELECT * FROM infeccoes_notificadas WHERE paciente_id=?", (p['id'],)
-            ).fetchall()
+        paciente_ids = [str(p['id']) for p in rows]
+        if paciente_ids:
+            ids_str = ",".join(paciente_ids)
+            procs = conn.execute(f"SELECT * FROM procedimentos WHERE status='ativo' AND paciente_id IN ({ids_str})").fetchall()
+            infs = conn.execute(f"SELECT * FROM infeccoes_notificadas WHERE paciente_id IN ({ids_str})").fetchall()
+            
+            proc_dict = {pid: [] for pid in paciente_ids}
+            for pr in procs:
+                proc_dict[str(pr['paciente_id'])].append(pr)
+                
+            inf_dict = {pid: [] for pid in paciente_ids}
+            for i in infs:
+                inf_dict[str(i['paciente_id'])].append(i)
+                
+            for p in rows:
+                p['procedimentos'] = proc_dict[str(p['id'])]
+                p['infeccoes'] = inf_dict[str(p['id'])]
+        else:
+            for p in rows:
+                p['procedimentos'] = []
+                p['infeccoes'] = []
     except Exception as e:
         conn.close()
         return jsonify({'error': str(e)}), 500
