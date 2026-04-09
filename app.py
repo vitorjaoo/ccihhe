@@ -386,18 +386,21 @@ def create_paciente():
     setor_id = data.get('setor_id')
     idade = data.get('idade')
     diagnostico = data.get('diagnostico', '').strip()
+    data_internacao = data.get('data_internacao')
+    if not data_internacao:
+        data_internacao = date.today().isoformat()
     if not setor_id or str(setor_id).strip() == '':
         setor_id = None
     if not idade or str(idade).strip() == '':
         idade = None
-    if session['nivel_acesso'] == 'estagiario':
-        setor_id = session['setor_id']
+    if session.get('nivel_acesso') == 'estagiario':
+        setor_id = session.get('setor_id')
 
     conn = get_db()
     try:
         cursor = conn.execute(
-            "INSERT INTO pacientes(nome, idade, leito, prontuario, fone, diagnostico, setor_id_atual, status, data_internacao) VALUES(?,?,?,?,?,?,?,'internado',date('now'))",
-            (nome, idade, data.get('leito', '').strip(), prontuario, data.get('fone', '').strip(), diagnostico, setor_id)
+            "INSERT INTO pacientes(nome, idade, leito, prontuario, fone, diagnostico, setor_id_atual, status, data_internacao) VALUES(?,?,?,?,?,?,?,'internado',?)",
+            (nome, idade, data.get('leito', '').strip(), prontuario, data.get('fone', '').strip(), diagnostico, setor_id, data_internacao)
         )
         conn.commit()
         pac = conn.execute(
@@ -458,6 +461,7 @@ def update_paciente(pid):
         prontuario = data.get('prontuario', pac['prontuario'] or '').strip()
         diagnostico = data.get('diagnostico', pac['diagnostico'] or '').strip()
         setor_id = data.get('setor_id', pac['setor_id_atual'])
+        data_internacao = data.get('data_internacao', pac['data_internacao'] or '')
 
         # Verifica duplicidade de prontuário (excluindo o próprio paciente)
         if prontuario:
@@ -469,8 +473,8 @@ def update_paciente(pid):
                 return jsonify({'error': f'Prontuário "{prontuario}" já está em uso por outro paciente.'}), 409
 
         conn.execute(
-            "UPDATE pacientes SET nome=?, idade=?, leito=?, prontuario=?, diagnostico=?, setor_id_atual=? WHERE id=?",
-            (nome, idade or None, leito, prontuario, diagnostico, setor_id or None, pid)
+            "UPDATE pacientes SET nome=?, idade=?, leito=?, prontuario=?, diagnostico=?, setor_id_atual=?, data_internacao=? WHERE id=?",
+            (nome, idade or None, leito, prontuario, diagnostico, setor_id or None, data_internacao, pid)
         )
         conn.commit()
         updated = conn.execute(
@@ -548,13 +552,13 @@ def solicitar_transferencia(pid):
         pac = conn.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone()
         if not pac:
             return jsonify({'error': 'Não encontrado'}), 404
-        if session['nivel_acesso'] == 'estagiario' and pac['setor_id_atual'] != session['setor_id']:
+        if session.get('nivel_acesso') == 'estagiario' and pac['setor_id_atual'] != session.get('setor_id'):
             return jsonify({'error': 'Sem permissão'}), 403
-        if str(setor_destino_id) == str(pac['setor_id_atual']):
+        if str(setor_destino_id) == str(pac.get('setor_id_atual')):
             return jsonify({'error': 'Setor de destino é o mesmo que o atual'}), 400
         conn.execute(
             "UPDATE pacientes SET status='transito', setor_destino_id=? WHERE id=?",
-            (setor_destino_id, pid)
+            (int(setor_destino_id), pid)
         )
         conn.commit()
     finally:
