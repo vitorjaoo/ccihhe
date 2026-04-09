@@ -388,7 +388,8 @@ const App = {
   },
   filterPacientes() { this.renderPacientes(); },
 
-  openModalNovoPaciente() {
+  async openModalNovoPaciente() {
+    await this.loadSetores();
     document.getElementById('np-nome').value = '';
     document.getElementById('np-idade').value = '';
     document.getElementById('np-prontuario').value = '';
@@ -451,9 +452,10 @@ const App = {
   },
 
   /* ── Editar Paciente ── */
-  openModalEditarPaciente() {
+  async openModalEditarPaciente() {
     const p = State.currentPacienteData;
     if (!p) return;
+    await this.loadSetores();
     document.getElementById('ep-nome').value = p.nome || '';
     document.getElementById('ep-idade').value = p.idade || '';
     document.getElementById('ep-prontuario').value = p.prontuario || '';
@@ -506,11 +508,12 @@ const App = {
   },
 
   /* ── Transferência ── */
-  openModalTransferencia() {
+  async openModalTransferencia() {
     const p = State.currentPacienteData;
     if (!p) return;
+    await this.loadSetores();
     const sel = document.getElementById('transf-setor-destino');
-    sel.innerHTML = State.setores
+    sel.innerHTML = '<option value="">Selecione...</option>' + State.setores
       .filter(s => s.id != p.setor_id_atual)
       .map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
     showModal('modal-transferencia');
@@ -700,7 +703,8 @@ const App = {
     } catch (e) { toast(e.message, 'error'); }
   },
 
-  openModalAlta() {
+  async openModalAlta() {
+    await this.loadMotivos();
     const sel = document.getElementById('ma-motivo');
     sel.innerHTML = '<option value="">Selecione...</option>' + State.motivos.map(m => `<option value="${m.id}">${m.nome}</option>`).join('');
     showModal('modal-alta');
@@ -745,7 +749,8 @@ const App = {
       document.getElementById('usuarios-tbody').innerHTML = users.map(u => `<tr><td style="font-weight:600">${u.nome}</td><td>${u.email}</td><td><span class="badge badge-gray">${u.nivel_acesso}</span></td><td>${u.setor_nome || '—'}</td><td class="write-only"><button class="btn btn-danger btn-sm" onclick="App.deleteUsuario(${u.id})">Excluir</button></td></tr>`).join('');
     } catch (e) { toast('Erro ao carregar usuários', 'error'); }
   },
-  openModalNovoUser() {
+  async openModalNovoUser() {
+    await this.loadSetores();
     document.getElementById('nu-nome').value = ''; document.getElementById('nu-email').value = ''; document.getElementById('nu-senha').value = ''; document.getElementById('nu-nivel').value = '';
     const sel = document.getElementById('nu-setor');
     sel.innerHTML = '<option value="">Sem restrição</option>' + State.setores.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
