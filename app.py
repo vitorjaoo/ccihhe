@@ -1,7 +1,7 @@
 import os
 import json
 import hashlib
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from functools import wraps
 from flask import Flask, request, jsonify, render_template, session
 import libsql_client
@@ -130,6 +130,11 @@ def init_db():
         except Exception:
             pass
 
+        try:
+            c.execute("ALTER TABLE pacientes ADD COLUMN ultima_atualizacao TEXT")
+        except Exception:
+            pass
+
         motivos = ['Alta Médica', 'Óbito', 'Transferência para outro hospital', 'Transferência para setor não rastreável']
         for m in motivos:
             c.execute("INSERT OR IGNORE INTO motivos_saida(nome) VALUES(?)", (m,))
@@ -150,6 +155,19 @@ def init_db():
         print(f"[CCIH] ERRO CRÍTICO no init_db: {e}")
         raise
 
+
+# ---------------------------------------------------------------------------
+# HISTÓRICO DE ATUALIZAÇÕES
+# ---------------------------------------------------------------------------
+def update_paciente_historico(conn, paciente_id):
+    try:
+        nome = session.get('nome', 'Usuário')
+        # Horário BRT (UTC-3)
+        agora = (datetime.utcnow() - timedelta(hours=3)).strftime("%d/%m %H:%M")
+        log_str = f"Atualizado por {nome} • {agora}"
+        conn.execute("UPDATE pacientes SET ultima_atualizacao=? WHERE id=?", (log_str, paciente_id))
+    except Exception as e:
+        print("[DB] Erro histórico:", e)
 
 # ---------------------------------------------------------------------------
 # AUTH HELPERS & ROUTES
@@ -431,6 +449,7 @@ def create_paciente():
             "INSERT INTO pacientes(nome, idade, leito, prontuario, fone, diagnostico, setor_id_atual, status, data_internacao) VALUES(?,?,?,?,?,?,?,'internado',?)",
             (nome, idade, data.get('leito', '').strip(), prontuario, data.get('fone', '').strip(), diagnostico, setor_id, data_internacao)
         )
+        update_paciente_historico(conn, cursor.lastrowid)
         conn.commit()
         pac = conn.execute(
             "SELECT p.*, s.nome as setor_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE p.id=?",
@@ -505,6 +524,7 @@ def update_paciente(pid):
             "UPDATE pacientes SET nome=?, idade=?, leito=?, prontuario=?, diagnostico=?, setor_id_atual=?, data_internacao=? WHERE id=?",
             (nome, idade or None, leito, prontuario, diagnostico, setor_id or None, data_internacao, pid)
         )
+        update_paciente_historico(conn, pid)
         conn.commit()
         updated = conn.execute(
             "SELECT p.*, s.nome as setor_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE p.id=?",
@@ -559,6 +579,7 @@ def dar_alta(pid):
             return jsonify({'error': 'Sem permissão'}), 403
         conn.execute("UPDATE pacientes SET status='alta', motivo_saida_id=? WHERE id=?", (motivo_id, pid))
         conn.execute("UPDATE procedimentos SET status='removido', data_remocao=date('now') WHERE paciente_id=? AND status='ativo'", (pid,))
+        update_paciente_historico(conn, pid)
         conn.commit()
     finally:
         conn.close()
@@ -590,6 +611,7 @@ def solicitar_transferencia(pid):
                 "UPDATE pacientes SET status='internado', setor_destino_id=? WHERE id=?",
                 (int(setor_destino_id), pid)
             )
+            update_paciente_historico(conn, pid)
             conn.commit()
         finally:
             conn.close()
@@ -624,6 +646,7 @@ def confirmar_transferencia(pid):
             "UPDATE pacientes SET status='internado', setor_id_atual=setor_destino_id, setor_destino_id=NULL WHERE id=?",
             (pid,)
         )
+        update_paciente_historico(conn, pid)
         conn.commit()
     finally:
         conn.close()
@@ -662,6 +685,7 @@ def add_registro(pid):
             "INSERT INTO registros_diarios(paciente_id, data, temperatura) VALUES(?,?,?)",
             (pid, data.get('data') or date.today().isoformat(), data.get('temperatura'))
         )
+        update_paciente_historico(conn, pid)
         conn.commit()
         reg = conn.execute(
             "SELECT * FROM registros_diarios WHERE paciente_id=? ORDER BY id DESC LIMIT 1", (pid,)
@@ -686,6 +710,7 @@ def add_procedimento(pid):
             "INSERT INTO procedimentos(paciente_id, tipo_procedimento, data_insercao, status) VALUES(?,?,?,'ativo')",
             (pid, tipo, data_ins)
         )
+        update_paciente_historico(conn, pid)
         conn.commit()
         proc = conn.execute(
             "SELECT * FROM procedimentos WHERE paciente_id=? ORDER BY id DESC LIMIT 1", (pid,)
@@ -703,8 +728,9 @@ def remover_procedimento(proc_id):
     conn = get_db()
     try:
         conn.execute("UPDATE procedimentos SET status='removido', data_remocao=? WHERE id=?", (data_rem, proc_id))
-        conn.commit()
         proc = conn.execute("SELECT * FROM procedimentos WHERE id=?", (proc_id,)).fetchone()
+        if proc: update_paciente_historico(conn, proc['paciente_id'])
+        conn.commit()
     finally:
         conn.close()
     return jsonify(proc)
@@ -727,6 +753,7 @@ def add_infeccao(pid):
             "INSERT INTO infeccoes_notificadas(paciente_id, tipo_infeccao, data_notificacao) VALUES(?,?,?)",
             (pid, tipo, data.get('data_notificacao') or date.today().isoformat())
         )
+        update_paciente_historico(conn, pid)
         conn.commit()
         inf = conn.execute(
             "SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY id DESC LIMIT 1", (pid,)
