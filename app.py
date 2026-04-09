@@ -47,19 +47,25 @@ class TursoCursor:
     def fetchall(self):
         return self.rows
 
+import os
 
 _global_client = None
+_client_pid = None
 
 def _get_global_client():
-    global _global_client
-    if _global_client is None:
-        print(f"[DB] Inicializando Global Client URL={TURSO_URL[:40]}...")
+    global _global_client, _client_pid
+    current_pid = os.getpid()
+    
+    if _global_client is None or _client_pid != current_pid:
+        print(f"[DB] Inicializando Global Client URL={TURSO_URL[:40]}... (PID: {current_pid})")
         if TURSO_URL.startswith("file:"):
             _global_client = libsql_client.create_client_sync(url=TURSO_URL)
         else:
             if not TURSO_TOKEN:
                 raise Exception("TURSO_TOKEN não configurado!")
             _global_client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
+        _client_pid = current_pid
+        
     return _global_client
 
 class TursoAdapter:
