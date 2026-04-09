@@ -795,15 +795,18 @@ def relatorios():
         ).fetchone()
         pacientes_alta = int(pac_alta_row['total']) if pac_alta_row else 0
 
+        # Infecções ativas = notificadas NESTE mês OU de meses anteriores com paciente ainda internado
+        inf_ativa = "(strftime('%Y-%m', i.data_notificacao) = ? OR (strftime('%Y-%m', i.data_notificacao) < ? AND p.status IN ('internado', 'transito')))"
+
         inf_mes_row = conn.execute(
-            f"SELECT COUNT(i.id) as total FROM infeccoes_notificadas i JOIN pacientes p ON p.id = i.paciente_id WHERE strftime('%Y-%m', i.data_notificacao)=? {wp}",
-            [ano_mes] + params
+            f"SELECT COUNT(i.id) as total FROM infeccoes_notificadas i JOIN pacientes p ON p.id = i.paciente_id WHERE {inf_ativa} {wp}",
+            [ano_mes, ano_mes] + params
         ).fetchone()
         total_inf = int(inf_mes_row['total']) if inf_mes_row else 0
 
         por_tipo = conn.execute(
-            f"SELECT i.tipo_infeccao, COUNT(i.id) as total FROM infeccoes_notificadas i JOIN pacientes p ON p.id = i.paciente_id WHERE strftime('%Y-%m', i.data_notificacao)=? {wp} GROUP BY i.tipo_infeccao",
-            [ano_mes] + params
+            f"SELECT i.tipo_infeccao, COUNT(i.id) as total FROM infeccoes_notificadas i JOIN pacientes p ON p.id = i.paciente_id WHERE {inf_ativa} {wp} GROUP BY i.tipo_infeccao",
+            [ano_mes, ano_mes] + params
         ).fetchall()
 
         def get_inf(tipo):
@@ -825,8 +828,8 @@ def relatorios():
         tot_cateter = int(tot_cat['total']) if tot_cat else 0
 
         sepse_cat = conn.execute(
-            f"SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i JOIN procedimentos pr ON i.paciente_id = pr.paciente_id JOIN pacientes p ON p.id = i.paciente_id WHERE i.tipo_infeccao = 'Sepse' AND lower(pr.tipo_procedimento) IN (?, ?, ?) AND strftime('%Y-%m', i.data_notificacao) = ? {wp}",
-            cateteres + (ano_mes,) + tuple(params)
+            f"SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i JOIN procedimentos pr ON i.paciente_id = pr.paciente_id JOIN pacientes p ON p.id = i.paciente_id WHERE i.tipo_infeccao = 'Sepse' AND lower(pr.tipo_procedimento) IN (?, ?, ?) AND {inf_ativa} {wp}",
+            cateteres + (ano_mes, ano_mes) + tuple(params)
         ).fetchone()
         pac_sepse_cateter = int(sepse_cat['total']) if sepse_cat else 0
         taxa_cateter = round((pac_sepse_cateter / tot_cateter * 100) if tot_cateter > 0 else 0, 2)
@@ -839,8 +842,8 @@ def relatorios():
         tot_resp_int = int(tot_resp['total']) if tot_resp else 0
 
         pneu_resp = conn.execute(
-            f"SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i JOIN procedimentos pr ON i.paciente_id = pr.paciente_id JOIN pacientes p ON p.id = i.paciente_id WHERE i.tipo_infeccao = 'Pneumonia' AND lower(pr.tipo_procedimento) IN (?, ?) AND strftime('%Y-%m', i.data_notificacao) = ? {wp}",
-            resps + (ano_mes,) + tuple(params)
+            f"SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i JOIN procedimentos pr ON i.paciente_id = pr.paciente_id JOIN pacientes p ON p.id = i.paciente_id WHERE i.tipo_infeccao = 'Pneumonia' AND lower(pr.tipo_procedimento) IN (?, ?) AND {inf_ativa} {wp}",
+            resps + (ano_mes, ano_mes) + tuple(params)
         ).fetchone()
         pac_pneumonia_resp = int(pneu_resp['total']) if pneu_resp else 0
         taxa_respirador = round((pac_pneumonia_resp / tot_resp_int * 100) if tot_resp_int > 0 else 0, 2)
@@ -852,8 +855,8 @@ def relatorios():
         tot_sonda_int = int(tot_sonda['total']) if tot_sonda else 0
 
         uri_sonda = conn.execute(
-            f"SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i JOIN procedimentos pr ON i.paciente_id = pr.paciente_id JOIN pacientes p ON p.id = i.paciente_id WHERE i.tipo_infeccao = 'Trato Urinário' AND lower(pr.tipo_procedimento) = 'sonda vesical' AND strftime('%Y-%m', i.data_notificacao) = ? {wp}",
-            (ano_mes,) + tuple(params)
+            f"SELECT COUNT(DISTINCT i.paciente_id) as total FROM infeccoes_notificadas i JOIN procedimentos pr ON i.paciente_id = pr.paciente_id JOIN pacientes p ON p.id = i.paciente_id WHERE i.tipo_infeccao = 'Trato Urinário' AND lower(pr.tipo_procedimento) = 'sonda vesical' AND {inf_ativa} {wp}",
+            (ano_mes, ano_mes) + tuple(params)
         ).fetchone()
         pac_urinario_sonda = int(uri_sonda['total']) if uri_sonda else 0
         taxa_sonda = round((pac_urinario_sonda / tot_sonda_int * 100) if tot_sonda_int > 0 else 0, 2)
@@ -863,8 +866,8 @@ def relatorios():
             tuple(params)
         ).fetchall()
         ultimas_inf = conn.execute(
-            f"SELECT i.*, p.nome as paciente_nome, s.nome as setor_nome FROM infeccoes_notificadas i JOIN pacientes p ON p.id=i.paciente_id LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE 1=1 {wp} ORDER BY i.id DESC LIMIT 10",
-            tuple(params)
+            f"SELECT i.*, p.nome as paciente_nome, s.nome as setor_nome FROM infeccoes_notificadas i JOIN pacientes p ON p.id=i.paciente_id LEFT JOIN setores s ON s.id=p.setor_id_atual WHERE {inf_ativa} {wp} ORDER BY i.id DESC LIMIT 10",
+            [ano_mes, ano_mes] + list(params)
         ).fetchall()
 
     except Exception as e:
