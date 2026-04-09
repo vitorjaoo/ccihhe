@@ -394,6 +394,7 @@ const App = {
     document.getElementById('np-prontuario').value = '';
     document.getElementById('np-leito').value = '';
     document.getElementById('np-diagnostico').value = '';
+    document.getElementById('np-data_internacao').value = today();
     const sel = document.getElementById('np-setor');
     sel.innerHTML = '<option value="">Selecione...</option>' + State.setores.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
 
@@ -414,13 +415,17 @@ const App = {
     State.salvarPacienteLocked = true;
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Salvando...'; }
 
+    const dataInternacao = document.getElementById('np-data_internacao').value;
+    if (!dataInternacao) return toast('Data de internação é obrigatória', 'error');
+
     const body = {
       nome: document.getElementById('np-nome').value,
       idade: document.getElementById('np-idade').value,
       prontuario: document.getElementById('np-prontuario').value,
       leito: document.getElementById('np-leito').value,
       diagnostico: document.getElementById('np-diagnostico').value,
-      setor_id: document.getElementById('np-setor').value
+      setor_id: document.getElementById('np-setor').value,
+      data_internacao: dataInternacao
     };
 
     try {
@@ -454,6 +459,7 @@ const App = {
     document.getElementById('ep-prontuario').value = p.prontuario || '';
     document.getElementById('ep-leito').value = p.leito || '';
     document.getElementById('ep-diagnostico').value = p.diagnostico || '';
+    document.getElementById('ep-data_internacao').value = p.data_internacao || today();
     const sel = document.getElementById('ep-setor');
     sel.innerHTML = '<option value="">Sem Setor</option>' + State.setores.map(s => `<option value="${s.id}" ${s.id == p.setor_id_atual ? 'selected' : ''}>${s.nome}</option>`).join('');
     showModal('modal-editar-paciente');
@@ -461,13 +467,17 @@ const App = {
 
   async salvarEdicaoPaciente() {
     const pid = State.currentPacienteId;
+    const dataInternacao = document.getElementById('ep-data_internacao').value;
+    if (!dataInternacao) return toast('Data de internação é obrigatória', 'error');
+
     const body = {
       nome: document.getElementById('ep-nome').value,
       idade: document.getElementById('ep-idade').value,
       prontuario: document.getElementById('ep-prontuario').value,
       leito: document.getElementById('ep-leito').value,
       diagnostico: document.getElementById('ep-diagnostico').value,
-      setor_id: document.getElementById('ep-setor').value
+      setor_id: document.getElementById('ep-setor').value,
+      data_internacao: dataInternacao
     };
     try {
       await api('PUT', `/api/pacientes/${pid}`, body);
