@@ -337,12 +337,12 @@ def get_pacientes():
     try:
         if nivel == 'estagiario' and setor_id:
             rows = conn.execute(
-                "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id = p.setor_id_atual LEFT JOIN setores sd ON sd.id = p.setor_destino_id WHERE p.setor_id_atual=? AND p.status IN ('internado','transito') ORDER BY p.nome",
+                "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id = p.setor_id_atual LEFT JOIN setores sd ON sd.id = p.setor_destino_id WHERE p.setor_id_atual=? AND (p.status='internado' OR p.status='transito') ORDER BY p.nome",
                 (setor_id,)
             ).fetchall()
         else:
             rows = conn.execute(
-                "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id = p.setor_id_atual LEFT JOIN setores sd ON sd.id = p.setor_destino_id WHERE p.status IN ('internado','transito') ORDER BY s.nome, p.nome"
+                "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id = p.setor_id_atual LEFT JOIN setores sd ON sd.id = p.setor_destino_id WHERE (p.status='internado' OR p.status='transito') ORDER BY s.nome, p.nome"
             ).fetchall()
         for p in rows:
             p['procedimentos'] = conn.execute(
@@ -558,7 +558,7 @@ def solicitar_transferencia(pid):
             if str(setor_destino_id) == str(pac.get('setor_id_atual')):
                 return jsonify({'error': 'Setor de destino é o mesmo que o atual'}), 400
             conn.execute(
-                "UPDATE pacientes SET status='transito', setor_destino_id=? WHERE id=?",
+                "UPDATE pacientes SET status='internado', setor_destino_id=? WHERE id=?",
                 (int(setor_destino_id), pid)
             )
             conn.commit()
@@ -569,7 +569,12 @@ def solicitar_transferencia(pid):
         import traceback
         error_details = traceback.format_exc()
         print("ERROR IN solicitar_transferencia:", error_details)
-        return jsonify({'error': str(e) + " | Check terminal for full traceback"}), 500
+        # Returning 200 so the fetch doesn't throw a generic 500 in the browser console.
+        # The javascript check `if (!res.ok)` is bypassed, but we can throw inside JS.
+        # Actually our javascript `api` function does: 
+        # `if (!res.ok) throw new Error(data.error); return data;`
+        # Because we return 400, it throws Error(data.error). So let's use 400!
+        return jsonify({'error': 'DEBUG: ' + str(e) + ' | ' + str(error_details)}), 400
 
 
 @app.route('/api/pacientes/<int:pid>/confirmar_transferencia', methods=['POST'])
@@ -581,7 +586,7 @@ def confirmar_transferencia(pid):
         pac = conn.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone()
         if not pac:
             return jsonify({'error': 'Não encontrado'}), 404
-        if pac['status'] != 'transito':
+        if pac['status'] != 'transito' and not pac.get('setor_destino_id'):
             return jsonify({'error': 'Paciente não está em trânsito'}), 400
         # Estagiário só pode confirmar se o destino for seu setor
         if session['nivel_acesso'] == 'estagiario' and pac['setor_destino_id'] != session['setor_id']:
@@ -605,12 +610,12 @@ def transferencias_pendentes():
     try:
         if nivel == 'estagiario' and setor_id:
             rows = conn.execute(
-                "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual LEFT JOIN setores sd ON sd.id=p.setor_destino_id WHERE p.status='transito' AND p.setor_destino_id=?",
+                "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual LEFT JOIN setores sd ON sd.id=p.setor_destino_id WHERE (p.status='transito' OR (p.status='internado' AND p.setor_destino_id IS NOT NULL)) AND p.setor_destino_id=?",
                 (setor_id,)
             ).fetchall()
         else:
             rows = conn.execute(
-                "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual LEFT JOIN setores sd ON sd.id=p.setor_destino_id WHERE p.status='transito'"
+                "SELECT p.*, s.nome as setor_nome, sd.nome as setor_destino_nome FROM pacientes p LEFT JOIN setores s ON s.id=p.setor_id_atual LEFT JOIN setores sd ON sd.id=p.setor_destino_id WHERE (p.status='transito' OR (p.status='internado' AND p.setor_destino_id IS NOT NULL))"
             ).fetchall()
     finally:
         conn.close()
@@ -798,7 +803,7 @@ def relatorios():
         taxa_sonda = round((pac_urinario_sonda / tot_sonda_int * 100) if tot_sonda_int > 0 else 0, 2)
 
         por_setor = conn.execute(
-            f"SELECT s.nome as setor, COUNT(p.id) as total FROM pacientes p JOIN setores s ON s.id=p.setor_id_atual WHERE p.status IN ('internado','transito') {wp} GROUP BY s.id ORDER BY s.nome",
+            f"SELECT s.nome as setor, COUNT(p.id) as total FROM pacientes p JOIN setores s ON s.id=p.setor_id_atual WHERE (p.status='internado' OR p.status='transito') {wp} GROUP BY s.id ORDER BY s.nome",
             tuple(params)
         ).fetchall()
         ultimas_inf = conn.execute(
@@ -892,7 +897,7 @@ def relatorio_impresso():
             wp = " AND p.setor_id_atual = ?" if setor_id else ""
             params = [setor_id] if setor_id else []
 
-            ir = conn.execute(f"SELECT COUNT(p.id) as total FROM pacientes p WHERE p.status IN ('internado','transito'){wp}", params).fetchone()
+            ir = conn.execute(f"SELECT COUNT(p.id) as total FROM pacientes p WHERE (p.status='internado' OR p.status='transito'){wp}", params).fetchone()
             internados = int(ir['total']) if ir else 0
 
             ar = conn.execute(f"SELECT COUNT(DISTINCT p.id) as total FROM pacientes p WHERE p.status='alta'{wp}", params).fetchone()
