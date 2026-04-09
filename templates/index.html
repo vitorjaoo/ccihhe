@@ -88,14 +88,15 @@
       padding: 10px 18px; border-radius: 10px; font-weight: 600; font-size: 13.5px;
       cursor: pointer; transition: all .2s; border: none; outline: none;
     }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-primary { background: var(--teal-500); color: white; }
-    .btn-primary:hover { background: var(--teal-600); box-shadow: 0 4px 12px rgba(20,184,166,.3); }
+    .btn-primary:hover:not(:disabled) { background: var(--teal-600); box-shadow: 0 4px 12px rgba(20,184,166,.3); }
     .btn-danger { background: #ef4444; color: white; }
-    .btn-danger:hover { background: #dc2626; }
+    .btn-danger:hover:not(:disabled) { background: #dc2626; }
     .btn-ghost { background: transparent; color: var(--slate-600); border: 1.5px solid var(--slate-200); }
-    .btn-ghost:hover { background: var(--slate-100); }
+    .btn-ghost:hover:not(:disabled) { background: var(--slate-100); }
     .btn-warning { background: #f59e0b; color: white; }
-    .btn-warning:hover { background: #d97706; }
+    .btn-warning:hover:not(:disabled) { background: #d97706; }
     .btn-sm { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
     /* ===== BADGES ===== */
     .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
@@ -162,6 +163,12 @@
     /* ===== PROGRESS BAR ===== */
     .progress-bar { height: 6px; background: var(--slate-100); border-radius: 10px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--teal-500); border-radius: 10px; }
+    /* ===== TRANSFER BANNER ===== */
+    .transf-banner {
+      display: none; align-items: center; gap: 12px; padding: 14px 18px;
+      background: #fffbeb; border: 1.5px solid #fbbf24; border-radius: 12px;
+      margin-bottom: 20px;
+    }
     @media (max-width: 768px) {
       .hide-mobile { display: none !important; }
     }
@@ -261,6 +268,7 @@
 
       <div style="padding:24px;max-width:1200px;margin:0 auto">
         
+        <!-- ====== DASHBOARD VIEW ====== -->
         <div id="view-dashboard">
           
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
@@ -330,6 +338,7 @@
 
         </div>
 
+        <!-- ====== PACIENTES VIEW ====== -->
         <div id="view-pacientes" style="display:none">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
             <div>
@@ -342,17 +351,42 @@
             </div>
           </div>
 
+          <!-- Transferências Pendentes Banner -->
+          <div id="transferencias-pendentes-container" style="display:none;margin-bottom:20px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;margin-bottom:10px;color:#92400e">
+              <span>🚌</span> Transferências Aguardando Confirmação
+            </div>
+            <div id="transferencias-pendentes-list" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px" id="pacientes-grid"></div>
         </div>
 
+        <!-- ====== PACIENTE DETAIL VIEW ====== -->
         <div id="view-paciente-detail" style="display:none">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
             <button class="btn btn-ghost" onclick="App.navigate('pacientes')">← Voltar</button>
             <div style="flex-grow:1">
               <div class="section-title" id="det-nome">Nome</div>
               <div class="section-sub" id="det-sub">Leito / Setor</div>
+              <div id="det-diagnostico" style="display:none;font-size:12px;color:var(--teal-700);font-weight:500;margin-top:4px"></div>
+              <div id="det-dias-internacao" style="margin-top:6px"></div>
             </div>
-            <button class="btn btn-danger write-only" onclick="App.openModalAlta()">Dar Alta</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost write-only" onclick="App.openModalEditarPaciente()">✏️ Editar</button>
+              <button id="btn-solicitar-transferencia" class="btn btn-warning write-only" onclick="App.openModalTransferencia()">🚌 Transferir</button>
+              <button class="btn btn-danger write-only" onclick="App.openModalAlta()">Dar Alta</button>
+              <button id="btn-deletar-paciente" class="btn btn-danger" style="display:none;background:#7f1d1d" onclick="App.deletarPaciente()">🗑️ Excluir</button>
+            </div>
+          </div>
+
+          <!-- Banner de trânsito -->
+          <div id="transf-banner" class="transf-banner">
+            <span style="font-size:20px">🚌</span>
+            <div>
+              <div style="font-weight:700;font-size:13px;color:#92400e">Paciente em Trânsito</div>
+              <div style="font-size:12px;color:#78350f">Transferência solicitada para: <strong id="transf-banner-destino">—</strong>. Aguardando confirmação do setor de destino.</div>
+            </div>
           </div>
 
           <div style="display:grid;grid-template-columns:1fr;gap:24px">
@@ -402,6 +436,7 @@
           </div>
         </div>
 
+        <!-- ====== SETORES VIEW ====== -->
         <div id="view-setores" style="display:none">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
             <div>
@@ -418,6 +453,7 @@
           </div>
         </div>
 
+        <!-- ====== USUARIOS VIEW ====== -->
         <div id="view-usuarios" style="display:none">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
             <div>
@@ -438,6 +474,9 @@
     </main>
   </div>
 
+  <!-- ====== MODAIS ====== -->
+
+  <!-- Modal: Novo Setor -->
   <div id="modal-setor" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Novo Setor</h3></div>
@@ -452,6 +491,7 @@
     </div>
   </div>
 
+  <!-- Modal: Novo Usuário -->
   <div id="modal-user" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Novo Usuário</h3></div>
@@ -489,6 +529,7 @@
     </div>
   </div>
 
+  <!-- Modal: Novo Paciente -->
   <div id="modal-paciente" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Internar Paciente</h3></div>
@@ -507,6 +548,10 @@
             <input id="np-prontuario" class="input-field" type="text"/>
           </div>
         </div>
+        <div>
+          <div class="label">Diagnóstico de Admissão</div>
+          <input id="np-diagnostico" class="input-field" type="text" placeholder="Ex: Pneumonia bacteriana, pós-op..."/>
+        </div>
         <div style="display:flex;gap:14px">
           <div style="flex:1" id="np-setor-wrap">
             <div class="label">Setor / Ala *</div>
@@ -520,11 +565,53 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-paciente')">Cancelar</button>
-        <button class="btn btn-primary" onclick="App.salvarPaciente()">Internar</button>
+        <button id="btn-salvar-paciente" class="btn btn-primary" onclick="App.salvarPaciente()">Internar</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal: Editar Paciente -->
+  <div id="modal-editar-paciente" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header"><h3 class="section-title" style="font-size:18px">✏️ Editar Paciente</h3></div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <div class="label">Nome do Paciente *</div>
+          <input id="ep-nome" class="input-field" type="text"/>
+        </div>
+        <div style="display:flex;gap:14px">
+          <div style="flex:1">
+            <div class="label">Idade</div>
+            <input id="ep-idade" class="input-field" type="number"/>
+          </div>
+          <div style="flex:1">
+            <div class="label">Prontuário</div>
+            <input id="ep-prontuario" class="input-field" type="text"/>
+          </div>
+        </div>
+        <div>
+          <div class="label">Diagnóstico de Admissão</div>
+          <input id="ep-diagnostico" class="input-field" type="text" placeholder="Ex: Pneumonia bacteriana, pós-op..."/>
+        </div>
+        <div style="display:flex;gap:14px">
+          <div style="flex:1">
+            <div class="label">Setor / Ala</div>
+            <select id="ep-setor" class="input-field"></select>
+          </div>
+          <div style="flex:1">
+            <div class="label">Leito</div>
+            <input id="ep-leito" class="input-field" type="text"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-editar-paciente')">Cancelar</button>
+        <button class="btn btn-primary" onclick="App.salvarEdicaoPaciente()">Salvar Alterações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Alta -->
   <div id="modal-alta" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px;color:#ef4444">Registrar Saída / Alta</h3></div>
@@ -539,13 +626,18 @@
     </div>
   </div>
 
+  <!-- Modal: Procedimento -->
   <div id="modal-proc" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Inserir Dispositivo</h3></div>
       <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
         <div>
           <div class="label">Tipo de Procedimento / Dispositivo</div>
-          <select id="proc-tipo" class="input-field"></select>
+          <select id="proc-tipo" class="input-field" onchange="App.onProcTipoChange()"></select>
+        </div>
+        <div id="proc-outros-wrap" style="display:none">
+          <div class="label">Descreva o Dispositivo</div>
+          <input id="proc-outros-texto" class="input-field" type="text" placeholder="Nome do dispositivo..."/>
         </div>
         <div>
           <div class="label">Data de Inserção</div>
@@ -559,6 +651,7 @@
     </div>
   </div>
 
+  <!-- Modal: Remover Procedimento -->
   <div id="modal-rem-proc" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Remover Dispositivo</h3></div>
@@ -573,6 +666,7 @@
     </div>
   </div>
 
+  <!-- Modal: Notificar Infecção -->
   <div id="modal-inf" class="modal-overlay">
     <div class="modal-box" style="border-top: 4px solid #ef4444">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px;color:#ef4444">Notificar Infecção</h3></div>
@@ -599,6 +693,7 @@
     </div>
   </div>
 
+  <!-- Modal: Mudar Senha -->
   <div id="modal-senha" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header"><h3 class="section-title" style="font-size:18px">Mudar Minha Senha</h3></div>
@@ -615,6 +710,26 @@
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="App.closeModal('modal-senha')">Cancelar</button>
         <button class="btn btn-primary" onclick="App.salvarSenha()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Solicitar Transferência -->
+  <div id="modal-transferencia" class="modal-overlay">
+    <div class="modal-box" style="border-top: 4px solid #f59e0b">
+      <div class="modal-header"><h3 class="section-title" style="font-size:18px;color:#92400e">🚌 Solicitar Transferência</h3></div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+        <p style="font-size:13px;color:var(--slate-500);margin:0">
+          O paciente entrará em estado de <strong>trânsito</strong>. O setor de destino precisará confirmar o recebimento para que a transferência seja concluída.
+        </p>
+        <div>
+          <div class="label">Setor de Destino *</div>
+          <select id="transf-setor-destino" class="input-field"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="App.closeModal('modal-transferencia')">Cancelar</button>
+        <button class="btn btn-warning" onclick="App.solicitarTransferencia()">Solicitar Transferência</button>
       </div>
     </div>
   </div>
