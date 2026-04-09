@@ -159,7 +159,10 @@ const App = {
 
     if (u.nivel_acesso === 'espectador') {
       document.getElementById('readonly-badge').style.display = 'flex';
+      // Esconde TODOS os elementos de ação de escrita imediatamente
       document.querySelectorAll('.write-only').forEach(el => el.style.display = 'none');
+      // Esconde o grupo admin da sidebar também para espectadores
+      document.getElementById('nav-admin-group').style.display = 'none';
     }
 
     if (u.nivel_acesso === 'estagiario' && u.setor_id) {
@@ -185,6 +188,11 @@ const App = {
   },
 
   navigate(view) {
+    // Bloqueia espectador de acessar áreas admin
+    if ((view === 'setores' || view === 'usuarios') && State.user && State.user.nivel_acesso !== 'admin') {
+      toast('Acesso restrito a administradores.', 'error');
+      return;
+    }
     this.closeSidebar();
     State.currentView = view;
     const titles = { dashboard: 'Dashboard Global', pacientes: 'Pacientes', 'paciente-detail': 'Detalhes do Paciente', setores: 'Setores / Alas', usuarios: 'Usuários' };
