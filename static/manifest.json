@@ -1,0 +1,22 @@
+{
+  "name": "CCIH — Controle de Infecção Hospitalar",
+  "short_name": "CCIH",
+  "description": "Sistema de Rastreio e Controle de Infecção Hospitalar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0fdfa",
+  "theme_color": "#0d9488",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/logoufal.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/logoufal.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

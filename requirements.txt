@@ -1,4 +1,6 @@
-flask>=3.0.0
-gunicorn>=21.0.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
 libsql-client
 python-dotenv
+jinja2
+itsdangerous

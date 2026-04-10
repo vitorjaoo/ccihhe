@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="CCIH — Sistema de Rastreio e Controle de Infecção Hospitalar. Monitoramento de procedimentos, infecções e taxas hospitalares em tempo real."/>
+  <meta name="theme-color" content="#0d9488"/>
   <title>CCIH — Sistema de Rastreio de Infecção Hospitalar</title>
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/static/manifest.json"/>
+  <link rel="apple-touch-icon" href="/static/logoufal.png"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -138,9 +143,6 @@
     .dias-ok { background: #dcfce7; color: #166534; }
     .dias-warn { background: #fef9c3; color: #713f12; }
     .dias-danger { background: #fee2e2; color: #991b1b; }
-    /* ===== PROC CARD ===== */
-    .proc-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--slate-50); border-radius: 10px; border: 1px solid var(--slate-100); margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
-    .proc-item-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
     /* ===== SCROLLBAR ===== */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -169,23 +171,104 @@
       background: #fffbeb; border: 1.5px solid #fbbf24; border-radius: 12px;
       margin-bottom: 20px;
     }
+    /* ===== DETAIL ACTION BAR ===== */
+    .detail-action-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .detail-action-buttons {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    /* ===== DETAIL ID GRID ===== */
+    .detail-id-grid {
+      display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: start;
+    }
+    /* ===== TEMP INPUT ROW ===== */
+    .temp-input-row {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    /* ===== HAMBURGER BUTTON ===== */
+    #btn-hamburger {
+      padding: 9px 12px;
+      border: 2px solid var(--slate-200) !important;
+      border-radius: 10px !important;
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s, box-shadow .2s, border-color .2s;
+      min-width: 44px; min-height: 44px;
+    }
+    #btn-hamburger:hover { background: var(--teal-50); border-color: var(--teal-400) !important; box-shadow: 0 2px 8px rgba(20,184,166,.15); }
+
+    /* ===== DETAIL ID CARD — tabular layout ===== */
+    .detail-info-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .detail-info-table td { padding: 6px 0; font-size: 13px; vertical-align: top; }
+    .detail-info-table td:first-child { font-size: 11px; font-weight: 700; color: var(--slate-400); text-transform: uppercase; letter-spacing: .5px; width: 110px; padding-right: 12px; }
+    .detail-info-table td:last-child { font-weight: 600; color: var(--slate-800); }
+
+    /* ===== MOBILE ===== */
     @media (max-width: 768px) {
       .hide-mobile { display: none !important; }
       .modal-box { max-width: 98vw; margin: 8px; border-radius: 14px; }
       .modal-body { padding: 16px; }
       .modal-footer { padding: 12px 16px; flex-wrap: wrap; }
       .modal-footer .btn { flex: 1; justify-content: center; }
-      #main-content { padding: 12px !important; }
+
+      /* Edge-to-edge — zero padding lateral */
+      #main-content { padding: 0 !important; }
+      #main-content > div { padding: 0 !important; max-width: 100% !important; }
+
+      /* Inner wrappers still get small padding */
+      #main-content > div > div { padding: 8px !important; }
+
       .section-title { font-size: 17px !important; }
-      .btn { padding: 8px 14px; font-size: 13px; }
+      .btn { padding: 8px 12px; font-size: 12.5px; }
       .metric-card { padding: 14px; }
-      #view-paciente-detail > div:first-child { flex-direction: column; align-items: flex-start; }
-      #view-paciente-detail > div:first-child > div:last-child { width: 100%; }
-      #view-paciente-detail > div:first-child > div:last-child .btn { flex: 1; justify-content: center; }
-      .proc-item { flex-direction: column; align-items: flex-start; }
-      .proc-item > div:last-child { align-self: flex-end; }
       #pac-search { width: 100% !important; }
-      .tbl th, .tbl td { padding: 8px 10px; font-size: 12px; }
+
+      /* Tables compact on mobile */
+      .tbl th, .tbl td { padding: 7px 8px; font-size: 12px; }
+
+      /* Detail view mobile: action bar horizontal compact row */
+      .detail-action-bar {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .detail-action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .detail-action-buttons .btn { flex: 0 1 auto; }
+      .detail-action-bar > .btn { flex-shrink: 0; }
+
+      .detail-id-grid { grid-template-columns: 1fr; }
+      .detail-id-card { padding: 14px !important; }
+      .temp-input-row { flex-direction: column; }
+      .temp-input-row .input-field { width: 100% !important; }
+
+      /* Force all auto-fit/fill grids to single column */
+      [style*="grid-template-columns:repeat(auto-fit,minmax(200px"] { grid-template-columns: 1fr !important; }
+      [style*="grid-template-columns:repeat(auto-fit,minmax(250px"] { grid-template-columns: 1fr !important; }
+      [style*="grid-template-columns:repeat(auto-fit,minmax(260px"] { grid-template-columns: 1fr !important; }
+      [style*="grid-template-columns:repeat(auto-fit,minmax(300px"] { grid-template-columns: 1fr !important; }
+      [style*="grid-template-columns:repeat(auto-fill,minmax(280px"] { grid-template-columns: 1fr !important; }
+
+      /* Pacientes grid single column */
+      #pacientes-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+
+      /* Tables overflow scrollable */
+      .card > div[style*="overflow-x:auto"],
+      .card > div[style*="overflow-x: auto"] { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .tbl { font-size: 12px; }
+
+      /* Diagnostico box mobile */
+      #det-diagnostico-box { background: var(--teal-50) !important; border-left: 3px solid var(--teal-400); border-radius: 8px; padding: 10px 12px; }
     }
   </style>
 </head>
@@ -194,7 +277,7 @@
   <div id="login-screen">
     <div class="login-card">
       <div style="text-align:center;margin-bottom:30px">
-       <img src="/static/logoufal.png" alt="" style="display: block; margin: 0 auto 25px; height: 100px; border-radius: 12px; object-fit: contain; background: #fff; padding: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        <img src="/static/logoufal.png" alt="Logo UFAL — Universidade Federal de Alagoas" width="100" height="100" style="display:block;margin:0 auto 25px;border-radius:12px;object-fit:contain;background:#fff;padding:5px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
         <p style="font-size:13px;color:#64748b;margin-top:4px">Controle de Infecção Hospitalar</p>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px">
@@ -223,7 +306,7 @@
       <div style="padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)">
         
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-          <img src="/static/logoufal.png" alt="Logo UFAL" style="height: 40px; border-radius: 8px; object-fit: contain; background: white; padding: 2px;">
+          <img src="/static/logoufal.png" alt="Logo UFAL" width="40" height="40" style="border-radius:8px;object-fit:contain;background:white;padding:2px;">
           <div>
             <div style="font-size:18px;font-weight:700;color:white;letter-spacing:.5px">CCIH</div>
             <div style="font-size:11px;color:var(--slate-400);text-transform:uppercase;letter-spacing:1px;margin-top:2px">PROJETO ACADÊMICO</div>
@@ -257,6 +340,11 @@
             <div class="nav-icon">👥</div> Usuários
           </div>
         </div>
+
+        <!-- Alterar Senha — sempre visível, acessível no mobile -->
+        <div class="nav-item" onclick="App.openModalSenha();App.closeSidebar();" style="margin-top:4px">
+          <div class="nav-icon">🔑</div> Alterar Senha
+        </div>
       </div>
 
       <div style="padding:20px">
@@ -266,14 +354,14 @@
 
     <main id="main-content">
       
-      <header style="background:white;height:70px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--slate-200);position:sticky;top:0;z-index:30">
-        <div style="display:flex;align-items:center;gap:16px">
-          <button class="btn btn-ghost" style="padding:8px;border:none" onclick="App.openSidebar()">
-            <span style="font-size:20px">☰</span>
+      <header style="background:white;height:60px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--slate-200);position:sticky;top:0;z-index:30">
+        <div style="display:flex;align-items:center;gap:14px">
+          <button id="btn-hamburger" onclick="App.openSidebar()" aria-label="Abrir menu">
+            <span style="font-size:20px;line-height:1">☰</span>
           </button>
           <div>
-            <h2 id="topbar-title" style="font-size:18px;font-weight:700;color:var(--slate-800)">Dashboard</h2>
-            <div id="topbar-setor" style="font-size:12px;color:var(--teal-600);font-weight:600;display:none;margin-top:2px">Setor Restrito</div>
+            <h2 id="topbar-title" style="font-size:17px;font-weight:700;color:var(--slate-800)">Dashboard</h2>
+            <div id="topbar-setor" style="font-size:12px;color:var(--teal-600);font-weight:600;display:none;margin-top:1px">Setor Restrito</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
@@ -292,7 +380,6 @@
               <div class="section-sub">Métricas de controle de infecção</div>
             </div>
             <div style="display:flex;gap:10px;">
-              <button class="btn btn-ghost hide-mobile" onclick="App.openModalSenha()">🔑 Mudar Senha</button>
               <button id="btn-imprimir-relatorio" class="btn btn-primary" style="display:none;" onclick="App.imprimirRelatorioGeral()">🖨️ Gerar Relatório Geral</button>
               <input type="month" id="filtro-mes" class="input-field" style="width:150px" onchange="App.loadDashboard()"/>
             </div>
@@ -379,19 +466,15 @@
 
         <!-- ====== PACIENTE DETAIL VIEW ====== -->
         <div id="view-paciente-detail" style="display:none">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-            <button class="btn btn-ghost" onclick="App.navigate('pacientes')">← Voltar</button>
-            <div style="flex-grow:1">
-              <div class="section-title" id="det-nome">Nome</div>
-              <div class="section-sub" id="det-sub">Leito / Setor</div>
-              <div id="det-diagnostico" style="display:none;font-size:12px;color:var(--teal-700);font-weight:500;margin-top:4px"></div>
-              <div id="det-dias-internacao" style="margin-top:6px"></div>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn btn-ghost write-only" onclick="App.openModalEditarPaciente()">✏️ Editar</button>
-              <button id="btn-solicitar-transferencia" class="btn btn-warning write-only" onclick="App.openModalTransferencia()">🚌 Transferir</button>
-              <button class="btn btn-danger write-only" onclick="App.openModalAlta()">Dar Alta</button>
-              <button id="btn-deletar-paciente" class="btn btn-danger" style="display:none;background:#7f1d1d" onclick="App.deletarPaciente()">🗑️ Excluir</button>
+
+          <!-- Barra de Ações Superior: Voltar + Botões de Ação -->
+          <div class="detail-action-bar" style="margin-bottom:14px">
+            <button class="btn btn-primary btn-sm" onclick="App.navigate('pacientes')" style="min-height:38px;min-width:80px">← Voltar</button>
+            <div class="detail-action-buttons">
+              <button class="btn btn-ghost btn-sm write-only" onclick="App.openModalEditarPaciente()">✏️ Editar</button>
+              <button id="btn-solicitar-transferencia" class="btn btn-warning btn-sm write-only" onclick="App.openModalTransferencia()">🚌 Transferir</button>
+              <button class="btn btn-danger btn-sm write-only" onclick="App.openModalAlta()">🏁 Alta</button>
+              <button id="btn-deletar-paciente" class="btn btn-sm" style="display:none;background:#7f1d1d;color:white" onclick="App.deletarPaciente()">🗑️ Excluir</button>
             </div>
           </div>
 
@@ -404,45 +487,98 @@
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr;gap:24px">
-            
+          <!-- Card de Identificação — elegante com borda teal e layout tabular -->
+          <div class="card detail-id-card" style="border-top:4px solid var(--teal-500);padding:20px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+              <div>
+                <div id="det-nome" style="font-size:20px;font-weight:700;color:var(--slate-800)">—</div>
+              </div>
+              <div id="det-dias-internacao"></div>
+            </div>
+
+            <!-- Tabela de info compacta -->
+            <table class="detail-info-table">
+              <tbody>
+                <tr>
+                  <td>Leito</td>
+                  <td id="det-leito">—</td>
+                </tr>
+                <tr>
+                  <td>Setor</td>
+                  <td id="det-setor">—</td>
+                </tr>
+                <tr>
+                  <td>Idade</td>
+                  <td id="det-idade">—</td>
+                </tr>
+                <tr>
+                  <td>Prontuário</td>
+                  <td id="det-prontuario">—</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Box de Diagnóstico com fundo teal-50 -->
+            <div id="det-diagnostico-box" style="display:none;margin-top:14px;padding:10px 14px;background:var(--teal-50);border-left:3px solid var(--teal-400);border-radius:8px">
+              <div class="label" style="margin-bottom:2px">Diagnóstico de Admissão</div>
+              <div id="det-diagnostico" style="font-size:13px;color:var(--slate-700);font-weight:500"></div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr;gap:20px">
+
+            <!-- Controle de Temperatura -->
             <div class="card" style="padding:20px">
-              <div style="font-weight:700;font-size:15px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+              <div style="font-weight:700;font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
                 <span>🌡️</span> Controle Diário (Temperatura)
               </div>
-              <div style="display:flex;gap:10px;margin-bottom:16px" class="write-only">
-                <input type="date" id="reg-data" class="input-field" style="width:140px"/>
-                <input type="number" step="0.1" id="reg-temp" class="input-field" placeholder="Temp °C" style="width:120px"/>
-                <button class="btn btn-primary" onclick="App.addRegistro()">Adicionar</button>
+              <div class="temp-input-row write-only" style="margin-bottom:14px">
+                <input type="date" id="reg-data" class="input-field" style="flex:1;min-width:120px"/>
+                <input type="number" step="0.1" id="reg-temp" class="input-field" placeholder="Temp °C" style="width:110px"/>
+                <button class="btn btn-primary btn-sm" onclick="App.addRegistro()">Adicionar</button>
               </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap" id="regs-list"></div>
             </div>
 
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px">
-              
-              <div class="card">
-                <div style="padding:20px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center">
-                  <div style="font-weight:700;font-size:14px">Procedimentos / Dispositivos</div>
-                  <button class="btn btn-sm btn-ghost write-only" onclick="App.openModalProc()">+ Adicionar</button>
-                </div>
-                <div style="padding:20px" id="procedimentos-list"></div>
+            <!-- Tabela de Procedimentos / Dispositivos -->
+            <div class="card">
+              <div style="padding:16px 20px;border-bottom:1px solid var(--slate-100);display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:700;font-size:14px">⚙️ Procedimentos / Dispositivos</div>
+                <button class="btn btn-sm btn-ghost write-only" onclick="App.openModalProc()">+ Adicionar</button>
               </div>
-
-              <div class="card">
-                <div style="padding:20px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center">
-                  <div style="font-weight:700;font-size:14px;color:#ef4444">Infecções Diagnosticadas</div>
-                  <button class="btn btn-sm btn-danger write-only" onclick="App.openModalInf()">+ Notificar</button>
-                </div>
-                <div style="padding:20px" id="infeccoes-list"></div>
-              </div>
-
-            </div>
-
-            <div class="card" style="margin-top:10px">
-              <div style="padding:20px;border-bottom:1px solid #f1f5f9;font-weight:700;font-size:14px">Infecções Registradas</div>
               <div style="overflow-x:auto">
                 <table class="tbl">
-                  <thead><tr><th>Tipo</th><th>Data Notificação</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th>Dispositivo</th>
+                      <th>Inserção</th>
+                      <th>Dias</th>
+                      <th>Status</th>
+                      <th class="write-only">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody id="procedimentos-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tabela de Infecções (Ativas primeiro, Curadas depois) -->
+            <div class="card">
+              <div style="padding:16px 20px;border-bottom:1px solid var(--slate-100);display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:700;font-size:14px;color:#ef4444">🦠 Infecções Diagnosticadas</div>
+                <button class="btn btn-sm btn-danger write-only" onclick="App.openModalInf()">+ Notificar</button>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="tbl">
+                  <thead>
+                    <tr>
+                      <th>Tipo</th>
+                      <th>Início</th>
+                      <th>Duração (Dias)</th>
+                      <th>Status</th>
+                      <th class="write-only">Ação</th>
+                    </tr>
+                  </thead>
                   <tbody id="infeccoes-tbody"></tbody>
                 </table>
               </div>
@@ -771,5 +907,13 @@
   <div id="toast-container"></div>
 
   <script src="/static/script.js"></script>
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
