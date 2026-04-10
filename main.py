@@ -127,9 +127,10 @@ async def update_paciente_historico(db, request: Request, paciente_id: int):
         print("[DB] Erro histórico:", e)
 
 # ---------------------------------------------------------------------------
-# ROTAS BASE E PWA
+# ROTAS BASE E PWA (AQUI ESTÁ A CORREÇÃO!)
 # ---------------------------------------------------------------------------
-@app.get('/', methods=["GET", "HEAD"], response_class=HTMLResponse)
+@app.get('/', response_class=HTMLResponse)
+@app.head('/', response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
@@ -384,7 +385,6 @@ async def dar_alta(pid: int, request: Request, session: dict = Depends(require_n
     ])
     return {'ok': True}
 
-# ROTAS DE TRANSFERÊNCIA, PROCEDIMENTOS E INFECÇÕES (Mantidas e seguras)
 @app.post('/api/pacientes/{pid}/solicitar_transferencia')
 async def solicitar_transf(pid: int, request: Request, session: dict = Depends(require_not_readonly), db = Depends(get_db)):
     data = await request.json()
@@ -429,7 +429,7 @@ async def get_transferencias(session: dict = Depends(require_auth), db = Depends
 
 
 # ---------------------------------------------------------------------------
-# ROTAS DA API: DASHBOARD E RELATÓRIOS (CORRIGIDO)
+# ROTAS DA API: DASHBOARD E RELATÓRIOS (COM A PROTEÇÃO ANTI-ERRO 502)
 # ---------------------------------------------------------------------------
 @app.get('/api/dashboard/relatorios')
 async def relatorios(request: Request, session: dict = Depends(require_auth), db = Depends(get_db)):
@@ -442,7 +442,6 @@ async def relatorios(request: Request, session: dict = Depends(require_auth), db
         wp = " AND p.setor_id_atual = ?" if filtro_setor else ""
         params = [filtro_setor] if filtro_setor else []
 
-        # --- A PROTEÇÃO CONTRA O ERRO 502 ESTÁ AQUI ---
         def extrair_total(rs_dict):
             if rs_dict and 'total' in rs_dict and rs_dict['total'] is not None:
                 return int(rs_dict['total'])
