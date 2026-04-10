@@ -18,7 +18,6 @@ load_dotenv()
 # CONFIGURAÇÃO DE BANCO (TURSO)
 # ---------------------------------------------------------------------------
 TURSO_URL = os.environ.get('TURSO_DATABASE_URL', 'https://ccih-vitorrastrep.aws-us-east-2.turso.io')
-# Lembre-se: O token precisa estar no Render (Environment Variables) ou colado aqui!
 TURSO_TOKEN = os.environ.get('TURSO_AUTH_TOKEN', '') 
 
 def hash_password(pw: str) -> str:
@@ -33,16 +32,15 @@ def row_to_dict(rs):
     return dict(zip(rs.columns, rs.rows[0]))
 
 # ---------------------------------------------------------------------------
-# INICIALIZAÇÃO DO BANCO (CONEXÃO GLOBAL - Fim do Erro 502)
+# INICIALIZAÇÃO DO BANCO (CONEXÃO GLOBAL)
 # ---------------------------------------------------------------------------
 db_client = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global db_client
-    print(f"[CCIH] Conectando ao banco Turso (Conexão Global)...")
+    print(f"[CCIH] A conectar ao banco Turso (Conexão Global)...")
     
-    # Abre a conexão UMA ÚNICA VEZ para o sistema todo
     db_client = libsql_client.create_client(url=TURSO_URL, auth_token=TURSO_TOKEN)
     
     await db_client.batch([
@@ -90,7 +88,6 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    # Fecha a conexão quando o servidor desligar
     await db_client.close()
 
 # ---------------------------------------------------------------------------
@@ -395,11 +392,25 @@ async def dar_alta(pid: int, request: Request, session: dict = Depends(require_n
     ])
     return {'ok': True}
 
-# --- ROTAS FALTANTES ADICIONADAS AQUI (FIM DO ERRO 404) ---
+# ---------------------------------------------------------------------------
+# ROTAS INDIVIDUAIS DO PACIENTE (GET / POST)
+# ---------------------------------------------------------------------------
 @app.get('/api/pacientes/{pid}/registros')
 async def get_registros(pid: int, session: dict = Depends(require_auth), db = Depends(get_db)):
     rs = await db.execute("SELECT * FROM registros_diarios WHERE paciente_id=? ORDER BY data DESC", [pid])
     return rows_to_dict(rs)
+
+@app.post('/api/pacientes/{pid}/registros')
+async def add_registro(pid: int, request: Request, session: dict = Depends(require_not_readonly), db = Depends(get_db)):
+    data = await request.json()
+    data_reg = data.get('data') or date.today().isoformat()
+    temperatura = data.get('temperatura')
+    
+    await db.execute(
+        "INSERT INTO registros_diarios(paciente_id, data, temperatura) VALUES(?,?,?)", 
+        [pid, data_reg, temperatura]
+    )
+    return {'ok': True}
 
 @app.get('/api/pacientes/{pid}/procedimentos')
 async def get_procedimentos(pid: int, session: dict = Depends(require_auth), db = Depends(get_db)):
@@ -410,8 +421,10 @@ async def get_procedimentos(pid: int, session: dict = Depends(require_auth), db 
 async def get_infeccoes(pid: int, session: dict = Depends(require_auth), db = Depends(get_db)):
     rs = await db.execute("SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY data_notificacao DESC", [pid])
     return rows_to_dict(rs)
-# ----------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# AÇÕES E TRANSFERÊNCIAS
+# ---------------------------------------------------------------------------
 @app.post('/api/pacientes/{pid}/solicitar_transferencia')
 async def solicitar_transf(pid: int, request: Request, session: dict = Depends(require_not_readonly), db = Depends(get_db)):
     data = await request.json()
@@ -456,7 +469,7 @@ async def get_transferencias(session: dict = Depends(require_auth), db = Depends
 
 
 # ---------------------------------------------------------------------------
-# ROTAS DA API: DASHBOARD E RELATÓRIOS
+# ROTAS DA API: DASHBOARD E RELATÓRIOS (BLINDADO)
 # ---------------------------------------------------------------------------
 @app.get('/api/dashboard/relatorios')
 async def relatorios(request: Request, session: dict = Depends(require_auth), db = Depends(get_db)):
