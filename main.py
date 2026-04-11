@@ -31,66 +31,88 @@ def row_to_dict(rs):
     return dict(zip(rs.columns, rs.rows[0]))
 
 # ---------------------------------------------------------------------------
+# CLIENTE GLOBAL PERSISTENTE
+# Evita abrir/fechar conexão a cada request (causa 502 na primeira abertura)
+# ---------------------------------------------------------------------------
+_db_client: libsql_client.Client = None
+
+def _get_client() -> libsql_client.Client:
+    global _db_client
+    if _db_client is None:
+        _db_client = libsql_client.create_client(url=TURSO_URL, auth_token=TURSO_TOKEN)
+    return _db_client
+
+# ---------------------------------------------------------------------------
 # INICIALIZAÇÃO DO BANCO
 # ---------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print(f"[CCIH] Conectando ao banco Turso (FastAPI): {TURSO_URL[:40]}...")
-    async with libsql_client.create_client(url=TURSO_URL, auth_token=TURSO_TOKEN) as db:
+    print(f"[CCIH] Inicializando banco Turso (FastAPI): {TURSO_URL[:40]}...")
+    db = _get_client()
+
+    await db.batch([
+        "CREATE TABLE IF NOT EXISTS setores ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL UNIQUE )",
+        "CREATE TABLE IF NOT EXISTS usuarios ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT NOT NULL UNIQUE, senha TEXT NOT NULL, nivel_acesso TEXT NOT NULL CHECK(nivel_acesso IN ('admin','estagiario','espectador')), setor_id INTEGER REFERENCES setores(id) )",
+        "CREATE TABLE IF NOT EXISTS motivos_saida ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL UNIQUE )",
+        "CREATE TABLE IF NOT EXISTS pacientes ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, idade INTEGER, leito TEXT, prontuario TEXT, fone TEXT, diagnostico TEXT, setor_id_atual INTEGER REFERENCES setores(id), status TEXT NOT NULL DEFAULT 'internado' CHECK(status IN ('internado','alta','transito')), motivo_saida_id INTEGER REFERENCES motivos_saida(id), data_internacao TEXT DEFAULT (date('now')), setor_destino_id INTEGER REFERENCES setores(id), ultima_atualizacao TEXT )",
+        "CREATE TABLE IF NOT EXISTS registros_diarios ( id INTEGER PRIMARY KEY AUTOINCREMENT, paciente_id INTEGER NOT NULL REFERENCES pacientes(id), data TEXT NOT NULL DEFAULT (date('now')), temperatura REAL )",
+        "CREATE TABLE IF NOT EXISTS procedimentos ( id INTEGER PRIMARY KEY AUTOINCREMENT, paciente_id INTEGER NOT NULL REFERENCES pacientes(id), tipo_procedimento TEXT NOT NULL, data_insercao TEXT NOT NULL, data_remocao TEXT, status TEXT NOT NULL DEFAULT 'ativo' CHECK(status IN ('ativo','removido')) )",
+        """CREATE TABLE IF NOT EXISTS infeccoes_notificadas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            paciente_id INTEGER NOT NULL REFERENCES pacientes(id),
+            tipo_infeccao TEXT NOT NULL,
+            data_notificacao TEXT NOT NULL DEFAULT (date('now')),
+            data_cura TEXT,
+            status TEXT NOT NULL DEFAULT 'ativa' CHECK(status IN ('ativa','curada'))
+        )"""
+    ])
+
+    # Migrações seguras
+    for migration in [
+        "ALTER TABLE infeccoes_notificadas ADD COLUMN data_cura TEXT",
+        "ALTER TABLE infeccoes_notificadas ADD COLUMN status TEXT NOT NULL DEFAULT 'ativa' CHECK(status IN ('ativa','curada'))",
+    ]:
+        try:
+            await db.execute(migration)
+        except Exception:
+            pass
+
+    # Motivos de saída — sem duplicatas
+    # "Transferência para outro hospital" é mantido como único motivo de transferência externa
+    motivos = [
+        'Alta Médica',
+        'Óbito',
+        'Transferência para outro hospital',
+        'Transferência para setor não rastreável',
+    ]
+    for m in motivos:
+        await db.execute("INSERT OR IGNORE INTO motivos_saida(nome) VALUES(?)", [m])
+
+    # Setores padrão apenas se banco vazio
+    rs_setores = await db.execute("SELECT COUNT(*) as total FROM setores")
+    if int(row_to_dict(rs_setores)['total']) == 0:
         await db.batch([
-            "CREATE TABLE IF NOT EXISTS setores ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL UNIQUE )",
-            "CREATE TABLE IF NOT EXISTS usuarios ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, email TEXT NOT NULL UNIQUE, senha TEXT NOT NULL, nivel_acesso TEXT NOT NULL CHECK(nivel_acesso IN ('admin','estagiario','espectador')), setor_id INTEGER REFERENCES setores(id) )",
-            "CREATE TABLE IF NOT EXISTS motivos_saida ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL UNIQUE )",
-            "CREATE TABLE IF NOT EXISTS pacientes ( id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, idade INTEGER, leito TEXT, prontuario TEXT, fone TEXT, diagnostico TEXT, setor_id_atual INTEGER REFERENCES setores(id), status TEXT NOT NULL DEFAULT 'internado' CHECK(status IN ('internado','alta','transito')), motivo_saida_id INTEGER REFERENCES motivos_saida(id), data_internacao TEXT DEFAULT (date('now')), setor_destino_id INTEGER REFERENCES setores(id), ultima_atualizacao TEXT )",
-            "CREATE TABLE IF NOT EXISTS registros_diarios ( id INTEGER PRIMARY KEY AUTOINCREMENT, paciente_id INTEGER NOT NULL REFERENCES pacientes(id), data TEXT NOT NULL DEFAULT (date('now')), temperatura REAL )",
-            "CREATE TABLE IF NOT EXISTS procedimentos ( id INTEGER PRIMARY KEY AUTOINCREMENT, paciente_id INTEGER NOT NULL REFERENCES pacientes(id), tipo_procedimento TEXT NOT NULL, data_insercao TEXT NOT NULL, data_remocao TEXT, status TEXT NOT NULL DEFAULT 'ativo' CHECK(status IN ('ativo','removido')) )",
-            """CREATE TABLE IF NOT EXISTS infeccoes_notificadas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                paciente_id INTEGER NOT NULL REFERENCES pacientes(id),
-                tipo_infeccao TEXT NOT NULL,
-                data_notificacao TEXT NOT NULL DEFAULT (date('now')),
-                data_cura TEXT,
-                status TEXT NOT NULL DEFAULT 'ativa' CHECK(status IN ('ativa','curada'))
-            )"""
+            "INSERT OR IGNORE INTO setores(nome) VALUES('UTI Geral')",
+            "INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Cirúrgica')",
+            "INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Médica')"
         ])
 
-        # Migração: adiciona colunas novas se não existirem
-        try:
-            await db.execute("ALTER TABLE infeccoes_notificadas ADD COLUMN data_cura TEXT")
-        except Exception:
-            pass
-        try:
-            await db.execute("ALTER TABLE infeccoes_notificadas ADD COLUMN status TEXT NOT NULL DEFAULT 'ativa' CHECK(status IN ('ativa','curada'))")
-        except Exception:
-            pass
+    rs_admin = await db.execute("SELECT id FROM usuarios WHERE email='admin@ccih.com'")
+    if not row_to_dict(rs_admin):
+        await db.execute(
+            "INSERT INTO usuarios(nome, email, senha, nivel_acesso, setor_id) VALUES('Administrador', 'admin@ccih.com', ?, 'admin', NULL)",
+            [hash_password('admin123')]
+        )
 
-        motivos = ['Alta Médica', 'Óbito', 'Transferência para outro hospital', 'Transferência para setor não rastreável']
-        for m in motivos:
-            await db.execute("INSERT OR IGNORE INTO motivos_saida(nome) VALUES(?)", [m])
-
-        rs_setores = await db.execute("SELECT COUNT(*) as total FROM setores")
-        if int(row_to_dict(rs_setores)['total']) == 0:
-            await db.batch([
-                "INSERT OR IGNORE INTO setores(nome) VALUES('UTI Geral')",
-                "INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Cirúrgica')",
-                "INSERT OR IGNORE INTO setores(nome) VALUES('Clínica Médica')"
-            ])
-
-        rs_admin = await db.execute("SELECT * FROM usuarios WHERE email='admin@ccih.com'")
-        if not row_to_dict(rs_admin):
-            await db.execute(
-                "INSERT INTO usuarios(nome, email, senha, nivel_acesso, setor_id) VALUES('Administrador', 'admin@ccih.com', ?, 'admin', NULL)",
-                [hash_password('admin123')]
-            )
-        print("[CCIH] Banco Inicializado com Sucesso.")
+    print("[CCIH] Banco Inicializado com Sucesso.")
     yield
+    # Não fecha o cliente — ele é reutilizado entre requests
 
 # ---------------------------------------------------------------------------
 # CONFIGURAÇÃO DO APP FASTAPI
 # ---------------------------------------------------------------------------
 app = FastAPI(title="CCIH API", lifespan=lifespan)
 
-# GZipMiddleware deve ser adicionado ANTES do SessionMiddleware
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(SessionMiddleware, secret_key=os.environ.get('SECRET_KEY', 'ccih_secret_2024_xK9mP'))
 
@@ -101,8 +123,7 @@ templates = Jinja2Templates(directory="templates")
 # DEPENDÊNCIAS
 # ---------------------------------------------------------------------------
 async def get_db():
-    async with libsql_client.create_client(url=TURSO_URL, auth_token=TURSO_TOKEN) as db:
-        yield db
+    return _get_client()
 
 async def require_auth(request: Request):
     if "user_id" not in request.session:
@@ -325,7 +346,6 @@ async def get_paciente(pid: int, session: dict = Depends(require_auth), db = Dep
 
     rs_reg = await db.execute("SELECT * FROM registros_diarios WHERE paciente_id=? ORDER BY data DESC", [pid])
     rs_proc = await db.execute("SELECT * FROM procedimentos WHERE paciente_id=? ORDER BY data_insercao DESC", [pid])
-    # Infecções: ativas primeiro, curadas depois
     rs_inf = await db.execute(
         "SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY CASE WHEN status='ativa' THEN 0 ELSE 1 END, data_notificacao DESC",
         [pid]
@@ -492,9 +512,6 @@ async def add_infeccao(pid: int, request: Request, session: dict = Depends(requi
     rs = await db.execute("SELECT * FROM infeccoes_notificadas WHERE paciente_id=? ORDER BY id DESC LIMIT 1", [pid])
     return JSONResponse(status_code=201, content=row_to_dict(rs))
 
-# ---------------------------------------------------------------------------
-# ROTA: Curar Infecção
-# ---------------------------------------------------------------------------
 @app.post('/api/infeccoes/{inf_id}/curar')
 async def curar_infeccao(inf_id: int, request: Request, session: dict = Depends(require_not_readonly), db = Depends(get_db)):
     data = await request.json()
